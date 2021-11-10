@@ -38,7 +38,7 @@ class Animation:
 
 
 class SpriteRenderer:
-    def __init__(self, spriteName="", scale=1, tiling=None):
+    def __init__(self, spriteName="", scale=1, tiling=None, drawOrder=0):
         self.gameObject = None
 
         self.sprite = loadSprite(spriteName) if spriteName is not "" else None
@@ -46,27 +46,47 @@ class SpriteRenderer:
         self.scale = scale
         self.size = None
         self.tiling = tiling if tiling is not None else Vector2(1, 1)
+        self.drawOrder = drawOrder
 
     def reloadSprite(self):
+        if not self in Canvas.sprites:
+            if Canvas.sprites == []:
+                Canvas.sprites.append(self)
+            else:
+                notAdded = True
+                for s, sprite in enumerate(Canvas.sprites):
+                    if sprite.drawOrder >= self.drawOrder and notAdded:
+                        notAdded = False
+                        Canvas.sprites.insert(s % (len(Canvas.sprites) + 1), self)
+                if not self in Canvas.sprites:
+                    Canvas.sprites.insert(len(Canvas.sprites), self)
+
         imageSize = Vector2(self.sprite.get_width(), self.sprite.get_height())
         self.size = imageSize * self.scale
-        drawSurface = pygame.Surface((imageSize * self.tiling * self.scale).toList())
+        drawSurface = pygame.Surface((imageSize * self.tiling * self.scale).toList(), pygame.SRCALPHA)
         for y in range(self.tiling.y):
             for x in range(self.tiling.x):
                 drawSurface.blit(pygame.transform.scale(self.sprite, self.size.toList()), (x * self.size.x, y * self.size.y))
         self.drawSprite = drawSurface
 
     def update(self, fpsDelta):
-        if self.drawSprite is not None:
-            if self.gameObject.transform.rotation == 0:
-                Canvas.main.blit(self.drawSprite, toScreenPos(self.gameObject.transform.position - (self.size / 2)).toList())
-            else:
-                rotatedSprite = pygame.transform.rotate(self.drawSprite, self.gameObject.transform.rotation)
-                rotateDifference = Vector2(rotatedSprite.get_width() - self.drawSprite.get_width(),
-                                           rotatedSprite.get_height() - self.drawSprite.get_height())
-                Canvas.main.blit(self.drawSprite, toScreenPos(self.gameObject.transform.position - (self.size / 2) - (rotateDifference / 2)).toList())
-        else:
+        if self.drawSprite is None:
             self.reloadSprite()
+
+        if not Canvas.drawn:
+            for sprite in Canvas.sprites:
+                sprite.draw()
+            Canvas.drawn = True
+
+    def draw(self):
+        if self.gameObject.transform.rotation == 0:
+            Canvas.main.blit(self.drawSprite, toScreenPos(self.gameObject.transform.position - (self.size / 2)).toList())
+        else:
+            rotatedSprite = pygame.transform.rotate(self.drawSprite, -self.gameObject.transform.rotation)
+            rotateDifference = Vector2(rotatedSprite.get_width() - self.drawSprite.get_width(),
+                                       rotatedSprite.get_height() - self.drawSprite.get_height())
+            Canvas.main.blit(rotatedSprite,
+                             toScreenPos(self.gameObject.transform.position - (self.size / 2) - (rotateDifference / 2)).toList())
 
 
 class Text:

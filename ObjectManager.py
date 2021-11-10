@@ -32,6 +32,7 @@ def updateEditor(fpsDelta):
                 textLines = []
                 textLines.append("GameObject: " + gameObject.name)
                 textLines.append("Position: " + str(round(gameObject.transform.position)))
+                textLines.append("Rotation: " + str(round(gameObject.transform.rotation)))
                 textLines.append("Local Position: " + str(round(gameObject.transform.localPosition)))
                 textLines.append("Components: ")
                 for component in gameObject.components:
@@ -61,6 +62,8 @@ def update(fpsDelta):
 
     Time.time += fpsDelta
 
+    Canvas.drawn = False
+
     for gameObject in Resources.gameObjects:
         gameObject.update(fpsDelta)
 
@@ -77,6 +80,9 @@ class Input:
     keysDown = []
     unicodeDown = []
     mousePosition = None
+
+    def isKeyDown(self, key):
+        return key in Input.keysDown or key in Input.unicodeDown
 
 
 class GameObject:
@@ -136,6 +142,7 @@ class Transform:
                 self.position = self.parent.transform.position + rotationPosition
             else:
                 self.position = self.parent.transform.position + self.localPosition
+        self.rotation = self.rotation % 360
 
     def addChild(self, gameObject):
         self.children.append(gameObject)

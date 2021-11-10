@@ -18,6 +18,8 @@ class Canvas:
     main = None
     pixelsPerUnit = 0
     screenSize = Vector2(0, 0)
+    drawn = False
+    sprites = []
 
     pygame.font.init()
     defaultFont = pygame.font.SysFont("Calibri", 16)
