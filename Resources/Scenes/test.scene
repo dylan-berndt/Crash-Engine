@@ -1,0 +1,2 @@
+GameObject(Vector2(0, 0), 0, "mainCamera")
+addComponent(Camera(True))
