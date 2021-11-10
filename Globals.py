@@ -19,6 +19,9 @@ class Canvas:
     pixelsPerUnit = 0
     screenSize = Vector2(0, 0)
 
+    pygame.font.init()
+    defaultFont = pygame.font.SysFont("Calibri", 16)
+
 class Resources:
     gameObjects = []
     resourceLocation = ""

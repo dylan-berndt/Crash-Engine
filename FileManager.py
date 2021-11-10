@@ -25,7 +25,7 @@ def recreate(copyThing):
 
 def loadSprites(folder, scale=1):
     items = []
-    loadList = os.listdir(Globals.resourceLocation + folder)
+    loadList = os.listdir(Resources.resourceLocation + folder)
     for item in loadList:
         if item.endswith(".png"):
             imageLoad = loadSprite(folder + "\\" + item[:-4])
@@ -37,7 +37,7 @@ def loadSprites(folder, scale=1):
 
 
 def loadSprite(name):
-    name = Globals.resourceLocation + name
+    name = Resources.resourceLocation + name
     try:
         return pygame.image.load(os.path.join(name+".png")).convert_alpha()
     except FileNotFoundError:
@@ -45,7 +45,7 @@ def loadSprite(name):
 
 
 def loadMaterial(name):
-    name = Globals.resourceLocation + name
+    name = Resources.resourceLocation + name
     try:
         materialFile = open(name + ".mat", "r")
         fileLines = materialFile.read().split("\n")

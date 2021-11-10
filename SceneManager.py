@@ -42,6 +42,6 @@ def loadScene(sceneName):
         raise NameError("Scene: "+sceneName+" had problems loading")
 
     fpsDisplay = GameObject(Vector2(5, 5) - (Canvas.screenSize / 2), 0, "fpsDisplay")
-    fpsDisplay.addComponent(Text(pygame.font.SysFont("Calibri", 20), "", highlight=(0, 0, 0)))
+    fpsDisplay.addComponent(Text(Canvas.defaultFont, "", highlight=(0, 0, 0)))
     fpsDisplay.transform.setParent(Canvas.mainCamera)
 

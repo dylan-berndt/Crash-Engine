@@ -47,6 +47,9 @@ class Vector2(dict):
     def __abs__(self):
         return Vector2(abs(self.x), abs(self.y))
 
+    def __round__(self, n=None):
+        return Vector2(round(self.x), round(self.y))
+
     def __str__(self):
         return "("+str(self.x)+", "+str(self.y)+")"
 

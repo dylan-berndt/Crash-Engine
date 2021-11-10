@@ -1,2 +1,6 @@
 GameObject(Vector2(0, 0), 0, "mainCamera")
 addComponent(Camera(True))
+
+GameObject(Vector2(100, 100), 0, "copperCoin")
+addComponent(SpriteRenderer("Pickups/Copper Coin/bronzeCoin1"))
+addComponent(Rigidbody(velocity=Vector2(10, 0)))

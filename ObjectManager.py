@@ -1,6 +1,7 @@
 from Globals import *
 from ScreenManager import *
 from PhysicsManager import *
+from FileManager import *
 
 
 def manageInput(events, mousePosition):
@@ -26,6 +27,30 @@ def updateEditor(fpsDelta):
         GameObject.Find("fpsDisplay").getComponent(Text).text = str(round(10/fpsDelta) / 10)
         for gameObject in Resources.gameObjects:
             pygame.draw.circle(Canvas.main, (255, 255, 255), toScreenPos(gameObject.transform.position).toList(), 2, 1)
+
+            if Vector2.distance(Input.mousePosition, toScreenPos(gameObject.transform.position)) < 15:
+                textLines = []
+                textLines.append("GameObject: " + gameObject.name)
+                textLines.append("Position: " + str(round(gameObject.transform.position)))
+                textLines.append("Local Position: " + str(round(gameObject.transform.localPosition)))
+                textLines.append("Components: ")
+                for component in gameObject.components:
+                    textLines.append("      " + str(type(component).__name__))
+
+                rowHeight = (Canvas.defaultFont.get_height() + 4)
+
+                boxHeight = len(textLines * rowHeight) + 10
+                boxWidth = max([Canvas.defaultFont.render(x, True, (255, 255, 255)).get_width() for x in textLines]) + 10
+
+                infoBox = pygame.Surface((boxWidth, boxHeight))
+
+                for t, text in enumerate(textLines):
+                    infoBox.blit(Canvas.defaultFont.render(text, True, (255, 255, 255)), (5, 5 + (t * rowHeight)))
+
+                if -Input.mousePosition.y > -(boxHeight + 10):
+                    Canvas.main.blit(infoBox, Input.mousePosition.toList())
+                else:
+                    Canvas.main.blit(infoBox, (Input.mousePosition - Vector2(0, boxHeight)).toList())
 
     else:
         GameObject.Find("fpsDisplay").getComponent(Text).text = ""
