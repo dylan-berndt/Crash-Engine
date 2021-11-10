@@ -1,9 +1,6 @@
 GameObject(Vector2(0, 0), 0, "mainCamera")
-addComponent(Camera(True))
+addComponent(Camera(mainCamera=True))
 
-GameObject(Vector2(100, 100), 0, "copperCoin")
+GameObject(Vector2(1, 1), 0, "copperCoin")
 addComponent(SpriteRenderer("Pickups/Copper Coin/bronzeCoin1", drawOrder=1, scale=2))
-addComponent(Rigidbody(velocity=Vector2(10, 0), torque=360))
-
-GameObject(Vector2(0, 0), 0, "background")
-addComponent(SpriteRenderer("back", scale=2))
+addComponent(Rigidbody(velocity=Vector2(1, 0), torque=360))

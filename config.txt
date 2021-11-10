@@ -1,3 +1,4 @@
 C:\Users\rapto\PycharmProjects\Crash Engine\Resources\
 64
 addScene({"name": "test", "gameObjects": "test.scene"})
+addScene({"name": "titleScreen", "gameObjects": "titleScreen.scene"})

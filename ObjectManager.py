@@ -31,9 +31,9 @@ def updateEditor(fpsDelta):
             if Vector2.distance(Input.mousePosition, toScreenPos(gameObject.transform.position)) < 15:
                 textLines = []
                 textLines.append("GameObject: " + gameObject.name)
-                textLines.append("Position: " + str(round(gameObject.transform.position)))
+                textLines.append("Position: " + str(round(gameObject.transform.position * 100) / 100))
                 textLines.append("Rotation: " + str(round(gameObject.transform.rotation)))
-                textLines.append("Local Position: " + str(round(gameObject.transform.localPosition)))
+                textLines.append("Local Position: " + str(round(gameObject.transform.localPosition * 100) / 100))
                 textLines.append("Components: ")
                 for component in gameObject.components:
                     textLines.append("      " + str(type(component).__name__))

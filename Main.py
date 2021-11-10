@@ -8,7 +8,7 @@ clock = pygame.time.Clock()
 
 pygame.init()
 
-loadScene("test")
+loadScene("titleScreen")
 
 while True:
     Canvas.main.fill((0, 0, 0))

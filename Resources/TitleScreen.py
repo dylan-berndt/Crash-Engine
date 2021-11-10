@@ -8,7 +8,7 @@ class TitleScreen:
         self.alpha = 255
         self.hangTime = 3
 
-    def update(self, fpsDelta, gameInput):
+    def update(self, fpsDelta):
         if self.hangTime > 0 and self.alpha > 0:
             self.hangTime -= fpsDelta
         elif self.alpha < 1:
@@ -20,3 +20,4 @@ class TitleScreen:
             newSprite = logoRenderer.sprite.copy().convert()
             newSprite.set_alpha(max(int(self.alpha), 0))
             logoRenderer.sprite = newSprite
+            logoRenderer.reloadSprite()

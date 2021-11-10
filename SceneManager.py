@@ -18,6 +18,7 @@ def loadScene(sceneName):
 
     Time.paused = False
     Resources.gameObjects = []
+    Canvas.sprites = []
 
     sceneFound = False
     sceneLoaded = False
@@ -41,7 +42,6 @@ def loadScene(sceneName):
     elif not sceneLoaded:
         raise NameError("Scene: "+sceneName+" had problems loading")
 
-    fpsDisplay = GameObject(Vector2(5, 5) - (Canvas.screenSize / 2), 0, "fpsDisplay")
+    fpsDisplay = GameObject(toWorldPos(Vector2(5, 5)), 0, "fpsDisplay")
     fpsDisplay.addComponent(Text(Canvas.defaultFont, "", highlight=(0, 0, 0)))
     fpsDisplay.transform.setParent(Canvas.mainCamera)
-
