@@ -8,10 +8,13 @@ class Time:
     time = 0
     gameSpeed = 1
     paused = False
+    frame = 0
 
 class Editor:
     sceneView = False
     editObject = None
+    terminalActive = False
+    terminalList = []
 
 class Canvas:
     mainCamera = None
@@ -27,6 +30,18 @@ class Canvas:
 class Resources:
     gameObjects = []
     resourceLocation = ""
+
+
+class Input:
+    keysDown = []
+    unicodeDown = []
+    mousePosition = None
+    leftClick = False
+    rightClick = False
+    justPressed = []
+
+    def isKeyDown(self, key):
+        return key in Input.keysDown or key in Input.unicodeDown
 
 import ObjectManager
 from ObjectManager import *

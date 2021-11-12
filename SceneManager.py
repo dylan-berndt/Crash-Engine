@@ -16,6 +16,10 @@ def addScene(dictionary):
 def loadScene(sceneName):
     global sceneList
 
+    log(" ")
+    log("Loading scene: " + sceneName)
+    log("~"*60)
+
     Time.paused = False
     Resources.gameObjects = []
     Canvas.sprites = []
@@ -45,3 +49,9 @@ def loadScene(sceneName):
     fpsDisplay = GameObject(toWorldPos(Vector2(5, 5)), 0, "fpsDisplay")
     fpsDisplay.addComponent(Text(Canvas.defaultFont, "", highlight=(0, 0, 0)))
     fpsDisplay.transform.setParent(Canvas.mainCamera)
+
+    rowHeight = (Canvas.defaultFont.get_height() + 10)
+    terminalInput = GameObject(toWorldPos(Vector2(5, Canvas.screenSize.y-rowHeight+6)), 0, "terminalInput")
+    terminalInput.addComponent(TextField(font=Canvas.defaultFont, size=Vector2(Canvas.screenSize.x - 10, rowHeight), function=runTerminal))
+    terminalInput.transform.setParent(Canvas.mainCamera)
+    terminalInput.active = False

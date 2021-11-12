@@ -4,9 +4,6 @@ from ScreenManager import *
 from FileManager import *
 
 
-class Physics:
-    colliders = []
-
 class BoxCollider:
     quickAngles = [225, 135, 45, 315]
 
@@ -36,6 +33,22 @@ class Rigidbody:
 
     def update(self, fpsDelta):
         if not self.static:
-            self.gameObject.transform.position += self.velocity * fpsDelta
-            self.velocity += self.gravity * fpsDelta
-            self.gameObject.transform.rotation += self.torque * fpsDelta
+            colliderFound = False
+            colliders = []
+            for colliderType in Physics.colliderTypes:
+                possibleCollider = self.gameObject.getComponent(colliderType)
+                if possibleCollider is not None:
+                    colliderFound = True
+                    colliders.append(possibleCollider)
+            if not colliderFound:
+                self.gameObject.transform.position += self.velocity * fpsDelta
+                self.velocity += self.gravity * fpsDelta
+                self.gameObject.transform.rotation += self.torque * fpsDelta
+            else:
+                for collider in colliders:
+                    pass
+
+
+class Physics:
+    colliders = []
+    colliderTypes = [BoxCollider, CircleCollider]
