@@ -1,15 +1,20 @@
 from Globals import *
+from FileManager import *
 from ScreenManager import *
 from PhysicsManager import *
-from FileManager import *
 
 
 def runTerminal(string):
-    try:
-        GameObject.Find("terminalInput").getComponent(TextField).text = ""
-        exec(string)
-    except Exception as e:
-        print(e)
+    if string != "":
+        for command in string.split("&"):
+            while command[0] == " ":
+                command = command[1:]
+            try:
+                GameObject.Find("terminalInput").getComponent(TextField).text = ""
+                exec(command)
+            except Exception as e:
+                log(" ")
+                log(str(type(e).__name__) + ": " + str(e))
 
 def log(string):
     Editor.terminalList.append(str(string))
@@ -23,6 +28,8 @@ def manageInput(events, mousePosition):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 Input.leftClick = True
+            if event.button == 3:
+                Input.rightClick = True
 
         if event.type == pygame.KEYDOWN:
             Input.keysDown.append(event.key)
@@ -34,14 +41,26 @@ def manageInput(events, mousePosition):
                 if not Editor.sceneView:
                     Editor.terminalActive = False
 
-            if event.key == pygame.K_ESCAPE and Editor.sceneView:
-                Editor.terminalActive = not Editor.terminalActive
+            if Editor.sceneView:
+                if event.key == pygame.K_ESCAPE:
+                    Editor.terminalActive = not Editor.terminalActive
 
-            if event.key == pygame.K_TAB and Editor.terminalActive:
-                log(" ")
-                log("Current GameObjects: ")
-                for gameObject in Resources.gameObjects:
-                    log(gameObject.name + " | active: " + str(gameObject.active))
+                if Editor.terminalActive:
+                    if event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        Editor.copied = GameObject.Find("terminalInput").getComponent(TextField).text
+
+                    if event.key == pygame.K_v and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        GameObject.Find("terminalInput").getComponent(TextField).text += Editor.copied
+
+                    if event.key == pygame.K_TAB:
+                        log(" ")
+                        log("Current GameObjects: ")
+                        for gameObject in Resources.gameObjects:
+                            log(gameObject.name + " | active: " + str(gameObject.active))
+
+                else:
+                    if pygame.key.get_mods() & pygame.KMOD_SHIFT and Input.leftClick:
+                        pass
 
         if event.type == pygame.KEYUP:
             Input.keysDown.remove(event.key)
@@ -54,14 +73,26 @@ def manageInput(events, mousePosition):
 
 def updateEditor(fpsDelta):
     if Editor.sceneView:
-        GameObject.Find("fpsDisplay").getComponent(Text).text = str(round(10/fpsDelta) / 10)
+        GameObject.Find("fpsDisplay").getComponent(Text).text = "FPS: " + str(round(10/fpsDelta) / 10)
 
         rowHeight = (Canvas.defaultFont.get_height() + 4)
 
-        for gameObject in Resources.gameObjects:
-            pygame.draw.circle(Canvas.main, (255, 255, 255), toScreenPos(gameObject.transform.position).toList(), 2, 1)
+        if not Editor.terminalActive:
+            for gameObject in list(set(Resources.gameObjects) - set(Editor.constantObjects)):
+                pygame.draw.circle(Canvas.main, (255, 255, 255), toScreenPos(gameObject.transform.position).toList(), 2, 1)
 
-            if gameObject != Canvas.mainCamera and not Editor.terminalActive:
+                colliders = gameObject.getAllOfComponentTypes(Physics.colliderTypes)
+                for collider in colliders:
+                    pointList = list(toScreenPos(point).toList() for point in collider.points)
+                    pygame.draw.polygon(Canvas.main, (255, 0, 0), pointList, 4)
+
+                    for triangle in collider.triangles:
+                        triangleList = list(toScreenPos(i).toList() for i in triangle)
+                        pygame.draw.polygon(Canvas.main, (0, 255, 0), triangleList, 1)
+
+                    for p, point in enumerate(collider.points):
+                        Canvas.main.blit(Canvas.defaultFont.render(str(p), False, (255, 255, 255), (0, 0, 0)), toScreenPos(point).toList())
+
                 if Vector2.distance(Input.mousePosition, toScreenPos(gameObject.transform.position)) < 20:
                     textLines = []
                     textLines.append("GameObject: " + gameObject.name)
@@ -91,22 +122,21 @@ def updateEditor(fpsDelta):
             boxWidth = Canvas.screenSize.x
             mockTerminal = pygame.Surface((boxWidth, boxHeight))
             for t, text in enumerate(Editor.terminalList):
-                mockTerminal.blit(Canvas.defaultFont.render(text, True, (255, 255, 255)),
-                                  (5, ((t - 2) * rowHeight) + (boxHeight - totalHeight)))
+                if ((t - 2) * rowHeight) + (boxHeight - totalHeight) > 0:
+                    mockTerminal.blit(Canvas.defaultFont.render(text, True, (255, 255, 255)),
+                                      (5, ((t - 2) * rowHeight) + (boxHeight - totalHeight)))
 
             Canvas.main.blit(mockTerminal, (0, 0))
 
-    else:
-        GameObject.Find("fpsDisplay").getComponent(Text).text = ""
-
-    terminalInput = GameObject.Find("terminalInput")
-    terminalInput.active = Editor.terminalActive
-    terminalInput.getComponent(TextField).focused = Editor.terminalActive
-    GameObject.Find("fpsDisplay").update(fpsDelta)
-    terminalInput.update(fpsDelta)
+        terminalInput = GameObject.Find("terminalInput")
+        terminalInput.active = Editor.terminalActive
+        terminalInput.getComponent(TextField).focused = Editor.terminalActive
+        GameObject.Find("fpsDisplay").update(fpsDelta)
+        terminalInput.update(fpsDelta)
 
 
 def update(fpsDelta):
+    stillDelta = fpsDelta
     if Time.paused:
         fpsDelta = 0
 
@@ -119,7 +149,7 @@ def update(fpsDelta):
         if gameObject.active and gameObject.name != "terminalInput" and gameObject.name != "fpsDisplay":
             gameObject.update(fpsDelta)
 
-    updateEditor(fpsDelta)
+    updateEditor(stillDelta)
 
 def addComponent(component):
     Resources.gameObjects[-1].addComponent(component)
@@ -153,6 +183,9 @@ class GameObject:
         for component in self.components:
             if type(component) == componentType:
                 return component
+
+    def getAllOfComponentTypes(self, componentTypes):
+        return list(component for component in self.components if type(component) in componentTypes)
 
     @staticmethod
     def Find(name):
@@ -214,3 +247,11 @@ class Transform:
 
     def getChild(self, index):
         return self.children[index]
+
+#this is the only comment im gonna make until it's time to publish this
+#thing and i just wanna say that it's 3:50 am and i am so goddamn annoyed
+#that i have to do this like this i've tried 8 other ways to import shit
+#so that you can load scenes in the terminal but nothing works and i've
+#had it up to here so fuck you and fuck your kids this looks stupid
+#but i'm doing it anyways fuck you goodnight also im drunk
+from SceneManager import *

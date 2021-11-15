@@ -1,5 +1,6 @@
 from Globals import *
 import Globals
+from Globals import *
 
 
 class TitleScreen:

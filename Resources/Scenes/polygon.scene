@@ -1,0 +1,7 @@
+GameObject(Vector2(0, 0), 0, "mainCamera")
+addComponent(Camera(mainCamera=True))
+
+GameObject(Vector2(0, 0), 0, "collision")
+addComponent(BoxCollider(size=Vector2(2, 2)))
+from PolygonTester import *
+addComponent(PolygonTester())

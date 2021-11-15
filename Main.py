@@ -8,7 +8,7 @@ clock = pygame.time.Clock()
 
 pygame.init()
 
-loadScene("titleScreen")
+loadScene("polygon")
 
 while True:
     Canvas.main.fill((0, 0, 0))

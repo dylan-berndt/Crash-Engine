@@ -26,9 +26,20 @@ class Camera:
         Canvas.mainCamera = self.gameObject
 
 
+class Tilemap:
+    def __init__(self):
+        self.gameObject = None
+
+    def update(self, fpsDelta):
+        pass
+
+    def simplifyPoints(self):
+        pass
+
+
 class Animator:
     def __init__(self):
-        pass
+        self.gameObject = None
 
     def update(self, fpsDelta):
         pass
@@ -36,7 +47,7 @@ class Animator:
 
 class Animation:
     def __init__(self, spriteFolder=None, spriteIndexes=None):
-        pass
+        self.gameObject = None
 
 
 class SpriteRenderer:
@@ -103,7 +114,7 @@ class Text:
     def __init__(self, font=None, text="", highlight=None, color=(255, 255, 255), surface=None):
         self.gameObject = None
 
-        self.font = font
+        self.font = font if font is not None else Canvas.defaultFont
         self.text = text
         self.highlight = highlight
         self.color = color
@@ -115,7 +126,7 @@ class Text:
                 self.surface.blit(self.font.render(self.text, True, self.color, self.highlight),
                                   toScreenPos(self.gameObject.transform.position).toList())
             else:
-                self.surface.fill((0, 0, 0))
+                self.surface.fill((0, 0, 0, 0))
                 self.surface.blit(self.font.render(self.text, True, self.color, self.highlight), (0, 0))
 
 
@@ -128,14 +139,14 @@ class Button:
 
 
 class TextField:
-    acceptable = ["(", ")", "[", "]", ",", ".", " ", '"', "'", "=", "+", "-", "/", "*"]
+    acceptable = ["(", ")", "[", "]", ",", ".", " ", '"', "'", "=", "+", "-", "/", "*", "&"]
 
     def __init__(self, hintText="", font=None, hintColor=(125, 125, 125), textColor=(255, 255, 255), size=None, function=None):
         self.gameObject = None
 
         self.focused = False
         self.hintText = hintText
-        self.font = font
+        self.font = font if font is not None else Canvas.defaultFont
         self.text = ""
         self.hintColor = hintColor
         self.textColor = textColor
@@ -147,7 +158,7 @@ class TextField:
         self.sinceBack += fpsDelta
 
         if self.gameObject.getComponent(Text) is None:
-            self.gameObject.addComponent(Text(font=self.font, surface=pygame.Surface(self.size.toList())))
+            self.gameObject.addComponent(Text(font=self.font, surface=pygame.Surface(self.size.toList(), pygame.SRCALPHA)))
 
         if Input.leftClick:
             self.focused = Input.mousePosition.isInside(toScreenPos(self.gameObject.transform.position),

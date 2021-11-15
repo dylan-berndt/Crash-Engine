@@ -70,6 +70,9 @@ class Vector2(dict):
     def toList(self):
         return [self.x, self.y]
 
+    def cross(self, other):
+        return self.y * other.x - self.x * other.y
+
     def rotate(self, angle):
         startAngle = math.atan2(self.y, self.x)
         endPosition = Vector2(math.cos(startAngle + angle), math.sin(startAngle + angle)) * self.magnitude()

@@ -11,6 +11,8 @@ class Time:
     frame = 0
 
 class Editor:
+    constantObjects = []
+    copied = ""
     sceneView = False
     editObject = None
     terminalActive = False
@@ -31,7 +33,6 @@ class Resources:
     gameObjects = []
     resourceLocation = ""
 
-
 class Input:
     keysDown = []
     unicodeDown = []
@@ -43,15 +44,10 @@ class Input:
     def isKeyDown(self, key):
         return key in Input.keysDown or key in Input.unicodeDown
 
-import ObjectManager
 from ObjectManager import *
-import ScreenManager
-from ScreenManager import *
-import PhysicsManager
-from PhysicsManager import *
-import FileManager
 from FileManager import *
-import SceneManager
+from ScreenManager import *
+from PhysicsManager import *
 from SceneManager import *
 import copy
 
