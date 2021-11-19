@@ -62,6 +62,9 @@ def manageInput(events, mousePosition):
                     if pygame.key.get_mods() & pygame.KMOD_SHIFT and Input.leftClick:
                         pass
 
+                    if pygame.key.get_mods() & pygame.KMOD_SHIFT and event.key == pygame.K_c:
+                        Editor.colliderDraw = not Editor.colliderDraw
+
         if event.type == pygame.KEYUP:
             Input.keysDown.remove(event.key)
             Input.unicodeDown.remove(event.unicode)
@@ -84,14 +87,17 @@ def updateEditor(fpsDelta):
                 colliders = gameObject.getAllOfComponentTypes(Physics.colliderTypes)
                 for collider in colliders:
                     pointList = list(toScreenPos(point).toList() for point in collider.points)
-                    pygame.draw.polygon(Canvas.main, (255, 0, 0), pointList, 4)
+                    if len(pointList) > 1:
+                        pygame.draw.polygon(Canvas.main, (0, 255, 0), pointList, 2)
 
-                    for triangle in collider.triangles:
-                        triangleList = list(toScreenPos(i).toList() for i in triangle)
-                        pygame.draw.polygon(Canvas.main, (0, 255, 0), triangleList, 1)
+                    if Editor.colliderDraw:
+                        for triangle in collider.triangles:
+                            triangleList = list(toScreenPos(i).toList() for i in triangle)
+                            pygame.draw.polygon(Canvas.main, (255, 0, 0), triangleList, 1)
 
-                    for p, point in enumerate(collider.points):
-                        Canvas.main.blit(Canvas.defaultFont.render(str(p), False, (255, 255, 255), (0, 0, 0)), toScreenPos(point).toList())
+                        for p, point in enumerate(collider.points):
+                            Canvas.main.blit(Canvas.defaultFont.render(str(p), False, (255, 255, 255),
+                                                                       (0, 0, 0)), toScreenPos(point).toList())
 
                 if Vector2.distance(Input.mousePosition, toScreenPos(gameObject.transform.position)) < 20:
                     textLines = []
@@ -151,11 +157,26 @@ def update(fpsDelta):
 
     updateEditor(stillDelta)
 
+
 def addComponent(component):
     Resources.gameObjects[-1].addComponent(component)
 
+
+def getComponent(component):
+    return Resources.gameObjects[-1].getComponent(component)
+
+
+def removeComponent(componentType):
+    Resources.gameObjects[-1].removeComponent(componentType)
+
+
 def instantiate(gameObject, active=True):
     newObject = recreate(gameObject)
+    newObject.components = []
+    for component in gameObject.components:
+        newComponent = recreate(component)
+        newComponent.gameObject = newObject
+        newObject.components.append(newComponent)
     newObject.active = active
     return newObject
 
@@ -178,6 +199,12 @@ class GameObject:
         self.components.append(component)
         log("Added " + str(type(component).__name__) + " to " + self.name)
         component.gameObject = self
+
+    def removeComponent(self, componentType):
+        for component in self.components:
+            if type(component) == componentType:
+                self.components.remove(component)
+                break
 
     def getComponent(self, componentType):
         for component in self.components:

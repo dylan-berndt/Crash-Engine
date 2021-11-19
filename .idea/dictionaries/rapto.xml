@@ -3,6 +3,7 @@
     <words>
       <w>collider</w>
       <w>colliders</w>
+      <w>rigidbody</w>
     </words>
   </dictionary>
 </component>

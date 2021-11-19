@@ -48,7 +48,7 @@ class Vector2(dict):
         return Vector2(abs(self.x), abs(self.y))
 
     def __round__(self, n=None):
-        return Vector2(round(self.x), round(self.y))
+        return Vector2(round(self.x, n), round(self.y, n))
 
     def __str__(self):
         return "("+str(self.x)+", "+str(self.y)+")"
@@ -62,9 +62,12 @@ class Vector2(dict):
     def magnitude(self):
         return math.sqrt((self.x ** 2) + (self.y ** 2))
 
+    def normalize(self):
+        return self / self.magnitude()
+
     def isInside(self, point1, point2):
-        insideX = min(point1.x, point2.x) < self.x < max(point1.x, point2.x)
-        insideY = min(point1.y, point2.y) < self.y < max(point1.y, point2.y)
+        insideX = min(point1.x, point2.x) <= self.x <= max(point1.x, point2.x)
+        insideY = min(point1.y, point2.y) <= self.y <= max(point1.y, point2.y)
         return insideX and insideY
 
     def toList(self):

@@ -1,7 +1,34 @@
 GameObject(Vector2(0, 0), 0, "mainCamera")
 addComponent(Camera(mainCamera=True))
 
-GameObject(Vector2(0, 0), 0, "collision")
+GameObject(Vector2(-4, 0), 0, "collision")
 addComponent(BoxCollider(size=Vector2(2, 2)))
-from PolygonTester import *
-addComponent(PolygonTester())
+addComponent(Rigidbody(velocity=Vector2(2, 0.5), gravity=Vector2(0, 9.8)))
+
+instantiate(Resources.gameObjects[-1])
+Resources.gameObjects[-1].name = "collision2"
+Resources.gameObjects[-1].transform.position = Vector2(4, 0)
+getComponent(Rigidbody).velocity = Vector2(-3, 0.25)
+
+instantiate(Resources.gameObjects[-1])
+Resources.gameObjects[-1].name = "collision3"
+Resources.gameObjects[-1].transform.position = Vector2(-2, -1)
+getComponent(Rigidbody).velocity = Vector2(0, 2)
+
+GameObject(Vector2(0, 4), 0, "floor")
+addComponent(BoxCollider(size=Vector2(17, 1)))
+addComponent(Rigidbody(static=True))
+
+GameObject(Vector2(-9, 0), 0, "left")
+addComponent(BoxCollider(size=Vector2(1, 9)))
+addComponent(Rigidbody(static=True))
+
+GameObject(Vector2(9, 0), 0, "right")
+addComponent(BoxCollider(size=Vector2(1, 9)))
+addComponent(Rigidbody(static=True))
+
+GameObject(Vector2(0, -4), 0, "ceiling")
+addComponent(BoxCollider(size=Vector2(17, 1)))
+addComponent(Rigidbody(static=True))
+
+

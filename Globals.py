@@ -13,10 +13,11 @@ class Time:
 class Editor:
     constantObjects = []
     copied = ""
-    sceneView = False
+    sceneView = True
     editObject = None
     terminalActive = False
     terminalList = []
+    colliderDraw = False
 
 class Canvas:
     mainCamera = None
