@@ -8,6 +8,10 @@ class PolygonTester:
     def update(self, fpsDelta):
         if Input.leftClick or Input.rightClick:
             clickPos = toWorldPos(Input.mousePosition)
+            # GameObject(clickPos, 0, "cheeseNuts")
+            # addComponent(CircleCollider(size=Vector2(1, 1), accuracy=10))
+            # addComponent(Rigidbody(velocity=Vector2(0, 0), bounce=1))
+
             colliders = self.gameObject.getAllOfComponentTypes(Physics.colliderTypes)
             polygonCollider = colliders[0]
             pointList = polygonCollider.points

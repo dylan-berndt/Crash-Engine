@@ -7,8 +7,17 @@ from FileManager import *
 def toScreenPos(position):
     return ((position - Canvas.mainCamera.transform.position) * Canvas.pixelsPerUnit) + (Canvas.screenSize / 2)
 
+
 def toWorldPos(position):
     return ((position - (Canvas.screenSize / 2)) / Canvas.pixelsPerUnit) + Canvas.mainCamera.transform.position
+
+
+def scaleToScreen(position):
+    return position * Canvas.pixelsPerUnit
+
+
+def scaleFromScreen(position):
+    return position / Canvas.pixelsPerUnit
 
 
 class Camera:
@@ -33,7 +42,13 @@ class Tilemap:
     def update(self, fpsDelta):
         pass
 
-    def simplifyPoints(self):
+    def addTile(self, tile, position):
+        pass
+
+    def getTile(self, position):
+        pass
+
+    def removeTile(self, position):
         pass
 
 
@@ -46,12 +61,13 @@ class Animator:
 
 
 class Animation:
-    def __init__(self, spriteFolder=None, spriteIndexes=None):
-        self.gameObject = None
+    def __init__(self, spriteFolder=None, spriteIndexes=None, animationType=0):
+        self.events = []
+        self.sprites = []
 
 
 class SpriteRenderer:
-    def __init__(self, spriteName="", scale=1, tiling=None, drawOrder=0):
+    def __init__(self, spriteName="", scale=1, tiling=None, drawOrder=0, offset=None):
         self.gameObject = None
 
         self.sprite = loadSprite(spriteName) if spriteName is not "" else None
@@ -60,6 +76,7 @@ class SpriteRenderer:
         self.size = None
         self.tiling = tiling if tiling is not None else Vector2(1, 1)
         self.drawOrder = drawOrder
+        self.offset = offset if offset is not None else Vector2(0, 0)
 
     def reloadSprite(self):
         self.sortSprite()
@@ -100,18 +117,19 @@ class SpriteRenderer:
             Canvas.drawn = True
 
     def draw(self):
+        drawPos = toScreenPos(self.gameObject.transform.position) - (self.size / 2) + scaleToScreen(self.offset)
         if self.gameObject.transform.rotation == 0:
-            Canvas.main.blit(self.drawSprite, (toScreenPos(self.gameObject.transform.position) - (self.size / 2)).toList())
+            Canvas.main.blit(self.drawSprite, drawPos.toList())
         else:
             rotatedSprite = pygame.transform.rotate(self.drawSprite, -self.gameObject.transform.rotation)
             rotateDifference = Vector2(rotatedSprite.get_width() - self.drawSprite.get_width(),
                                        rotatedSprite.get_height() - self.drawSprite.get_height())
             Canvas.main.blit(rotatedSprite,
-                             (toScreenPos(self.gameObject.transform.position) - (self.size / 2) - (rotateDifference / 2)).toList())
+                             (drawPos - (rotateDifference / 2)).toList())
 
 
 class Text:
-    def __init__(self, font=None, text="", highlight=None, color=(255, 255, 255), surface=None):
+    def __init__(self, font=None, text="", highlight=None, color=(255, 255, 255), surface=None, offset=None, orientation=None):
         self.gameObject = None
 
         self.font = font if font is not None else Canvas.defaultFont
@@ -119,12 +137,16 @@ class Text:
         self.highlight = highlight
         self.color = color
         self.surface = surface if surface is not None else Canvas.main
+        self.offset = offset if offset is not None else Vector2(0, 0)
+        self.orientation = orientation if orientation is not None else Vector2(0, 0)
 
     def update(self, fpsDelta):
         if self.font is not None:
             if self.surface == Canvas.main:
-                self.surface.blit(self.font.render(self.text, True, self.color, self.highlight),
-                                  toScreenPos(self.gameObject.transform.position).toList())
+                render = self.font.render(self.text, True, self.color, self.highlight)
+                offsetThing = scaleToScreen(self.offset) + (Vector2(render.get_width(), self.font.get_height()) * (self.orientation / -2))
+                self.surface.blit(render,
+                                  (toScreenPos(self.gameObject.transform.position) + offsetThing).toList())
             else:
                 self.surface.fill((0, 0, 0, 0))
                 self.surface.blit(self.font.render(self.text, True, self.color, self.highlight), (0, 0))
@@ -141,7 +163,7 @@ class Button:
 class TextField:
     acceptable = ["(", ")", "[", "]", ",", ".", " ", '"', "'", "=", "+", "-", "/", "*", "&"]
 
-    def __init__(self, hintText="", font=None, hintColor=(125, 125, 125), textColor=(255, 255, 255), size=None, function=None):
+    def __init__(self, hintText="", font=None, hintColor=(125, 125, 125), textColor=(255, 255, 255), size=None, function=None, offset=None, orientation=None):
         self.gameObject = None
 
         self.focused = False
@@ -153,16 +175,19 @@ class TextField:
         self.size = size if size is not None else Vector2(100, self.font.get_height() + 5)
         self.sinceBack = 0
         self.function = function
+        self.offset = offset if offset is not None else Vector2(0, 0)
+        self.orientation = orientation if orientation is not None else Vector2(0, 0)
 
     def update(self, fpsDelta):
         self.sinceBack += fpsDelta
+        offsetThing = scaleToScreen(self.offset) + ((self.orientation / -2) * self.size)
 
         if self.gameObject.getComponent(Text) is None:
             self.gameObject.addComponent(Text(font=self.font, surface=pygame.Surface(self.size.toList(), pygame.SRCALPHA)))
 
         if Input.leftClick:
-            self.focused = Input.mousePosition.isInside(toScreenPos(self.gameObject.transform.position),
-                                                        toScreenPos(self.gameObject.transform.position + self.size))
+            self.focused = Input.mousePosition.isInside(toScreenPos(self.gameObject.transform.position) + offsetThing,
+                                                        toScreenPos(self.gameObject.transform.position + self.size) + offsetThing)
 
         if self.focused:
             for letter in Input.justPressed:
@@ -185,10 +210,11 @@ class TextField:
             text.text = self.text
             text.color = self.textColor
 
-        Canvas.main.blit(text.surface, toScreenPos(self.gameObject.transform.position).toList())
+        Canvas.main.blit(text.surface, (toScreenPos(self.gameObject.transform.position) + scaleToScreen(self.offset)).toList())
 
         if int(Time.time*2) % 2 == 1 and self.focused:
             rowHeight = self.font.get_height()
             textWidth = self.font.render(self.text, True, self.textColor).get_width()
-            screenPos = toScreenPos(self.gameObject.transform.position)
+            screenPos = toScreenPos(self.gameObject.transform.position) + offsetThing
             pygame.draw.rect(Canvas.main, self.textColor, (screenPos.x + textWidth, screenPos.y, 2, rowHeight))
+ 

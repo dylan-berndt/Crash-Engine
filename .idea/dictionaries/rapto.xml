@@ -4,6 +4,7 @@
       <w>collider</w>
       <w>colliders</w>
       <w>rigidbody</w>
+      <w>tilemap</w>
     </words>
   </dictionary>
 </component>

@@ -1,14 +1,29 @@
 import os
 import sys
 import pygame
+import tkinter
+from tkinter import filedialog
 import numpy
 from MathBasic import *
+import datetime
 
 class Time:
     time = 0
     gameSpeed = 1
     paused = False
     frame = 0
+    debugTime = 0
+    hooks = []
+
+    @staticmethod
+    def startDebugTime():
+        Time.debugTime = datetime.datetime.now()
+
+    @staticmethod
+    def getDebugTime():
+        thing = datetime.datetime.now() - Time.debugTime
+        Time.debugTime = datetime.datetime.now()
+        return int(thing.microseconds / 1000)
 
 class Editor:
     constantObjects = []
@@ -17,7 +32,11 @@ class Editor:
     editObject = None
     terminalActive = False
     terminalList = []
-    colliderDraw = False
+    colliderDraw = True
+    triangleDraw = False
+    terminalAxis = 0
+    drawNormals = False
+    normals = []
 
 class Canvas:
     mainCamera = None
@@ -33,6 +52,7 @@ class Canvas:
 class Resources:
     gameObjects = []
     resourceLocation = ""
+    fileWindow = None
 
 class Input:
     keysDown = []
@@ -42,7 +62,8 @@ class Input:
     rightClick = False
     justPressed = []
 
-    def isKeyDown(self, key):
+    @staticmethod
+    def isKeyDown(key):
         return key in Input.keysDown or key in Input.unicodeDown
 
 from ObjectManager import *

@@ -15,11 +15,11 @@ while True:
 
     mx, my = pygame.mouse.get_pos()
     mousePosition = Vector2(mx, my)
-    manageInput(pygame.event.get(), mousePosition)
 
     clock.tick(360)
     fps = clock.get_fps()
     if fps != 0:
         update(1 / fps)
+        manageInput(1 / fps, pygame.event.get(), mousePosition)
 
     pygame.display.update()

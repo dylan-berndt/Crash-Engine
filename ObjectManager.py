@@ -17,9 +17,11 @@ def runTerminal(string):
                 log(str(type(e).__name__) + ": " + str(e))
 
 def log(string):
+    rowHeight = (Canvas.defaultFont.get_height() + 4)
+    Editor.terminalAxis -= rowHeight
     Editor.terminalList.append(str(string))
 
-def manageInput(events, mousePosition):
+def manageInput(fpsDelta, events, mousePosition):
     Input.leftClick = False
     Input.rightClick = False
     Input.justPressed = []
@@ -30,6 +32,12 @@ def manageInput(events, mousePosition):
                 Input.leftClick = True
             if event.button == 3:
                 Input.rightClick = True
+
+            if Editor.terminalActive:
+                if event.button == 4:
+                    Editor.terminalAxis += fpsDelta * 2000
+                if event.button == 5:
+                    Editor.terminalAxis -= fpsDelta * 2000
 
         if event.type == pygame.KEYDOWN:
             Input.keysDown.append(event.key)
@@ -43,6 +51,7 @@ def manageInput(events, mousePosition):
 
             if Editor.sceneView:
                 if event.key == pygame.K_ESCAPE:
+                    Editor.terminalAxis = 0
                     Editor.terminalActive = not Editor.terminalActive
 
                 if Editor.terminalActive:
@@ -59,11 +68,20 @@ def manageInput(events, mousePosition):
                             log(gameObject.name + " | active: " + str(gameObject.active))
 
                 else:
+                    if event.key == pygame.K_n and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        Editor.drawNormals = not Editor.drawNormals
+
+                    if event.key == pygame.K_p and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        Time.paused = not Time.paused
+
+                    if event.key == pygame.K_t and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        Editor.triangleDraw = not Editor.triangleDraw
+
+                    if event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        Editor.colliderDraw = not Editor.colliderDraw
+
                     if pygame.key.get_mods() & pygame.KMOD_SHIFT and Input.leftClick:
                         pass
-
-                    if pygame.key.get_mods() & pygame.KMOD_SHIFT and event.key == pygame.K_c:
-                        Editor.colliderDraw = not Editor.colliderDraw
 
         if event.type == pygame.KEYUP:
             Input.keysDown.remove(event.key)
@@ -76,75 +94,104 @@ def manageInput(events, mousePosition):
 
 def updateEditor(fpsDelta):
     if Editor.sceneView:
+        if Input.isKeyDown(pygame.K_w):
+            Canvas.pixelsPerUnit *= 1 + fpsDelta
+
+        if Input.isKeyDown(pygame.K_s):
+            Canvas.pixelsPerUnit /= 1 + fpsDelta
+
         GameObject.Find("fpsDisplay").getComponent(Text).text = "FPS: " + str(round(10/fpsDelta) / 10)
+        totalEnergy = sum(collider.rigidbody.velocity.magnitude() * collider.rigidbody.mass for collider in Physics.colliders)
 
         rowHeight = (Canvas.defaultFont.get_height() + 4)
 
         if not Editor.terminalActive:
+            if Editor.drawNormals:
+                for normal in Editor.normals[-100:]:
+                    drawPoint = toScreenPos(normal[0])
+                    pygame.draw.line(Canvas.main, (255, 255, 255), drawPoint.toList(), (drawPoint + (normal[1] * 10)).toList())
+
             for gameObject in list(set(Resources.gameObjects) - set(Editor.constantObjects)):
                 pygame.draw.circle(Canvas.main, (255, 255, 255), toScreenPos(gameObject.transform.position).toList(), 2, 1)
 
+                if gameObject.getComponent(Rigidbody) is not None:
+                    if Editor.colliderDraw:
+                        pygame.draw.circle(Canvas.main, (255, 0, 0), toScreenPos(gameObject.getComponent(Rigidbody).center).toList(), 5, 1)
+
+                    velocityPos = gameObject.getComponent(Rigidbody).velocity * 5 * (Canvas.pixelsPerUnit / 25)
+                    pygame.draw.line(Canvas.main, (255, 0, 0), toScreenPos(gameObject.transform.position).toList(),
+                                     (toScreenPos(gameObject.transform.position) + Vector2(velocityPos.x, 0)).toList())
+                    pygame.draw.line(Canvas.main, (0, 0, 255), toScreenPos(gameObject.transform.position).toList(),
+                                     (toScreenPos(gameObject.transform.position) + Vector2(0, velocityPos.y)).toList())
+
                 colliders = gameObject.getAllOfComponentTypes(Physics.colliderTypes)
                 for collider in colliders:
-                    pointList = list(toScreenPos(point).toList() for point in collider.points)
-                    if len(pointList) > 1:
-                        pygame.draw.polygon(Canvas.main, (0, 255, 0), pointList, 2)
+                    if Editor.colliderDraw and not Editor.triangleDraw:
+                        pointList = list(toScreenPos(point).toList() for point in collider.points)
+                        if len(pointList) > 1:
+                            pygame.draw.polygon(Canvas.main, (0, 255, 0), pointList, 1)
 
-                    if Editor.colliderDraw:
-                        for triangle in collider.triangles:
-                            triangleList = list(toScreenPos(i).toList() for i in triangle)
-                            pygame.draw.polygon(Canvas.main, (255, 0, 0), triangleList, 1)
+                    if Editor.triangleDraw:
+                        lineList = []
+                        for l in range(len(collider.lines)):
+                            thing = list(toScreenPos(line[0]).toList() for line in collider.lines[l][:-2])
+                            for t in thing:
+                                lineList.append(t)
+                        pygame.draw.polygon(Canvas.main, (0, 255, 0), lineList, 1)
 
-                        for p, point in enumerate(collider.points):
-                            Canvas.main.blit(Canvas.defaultFont.render(str(p), False, (255, 255, 255),
-                                                                       (0, 0, 0)), toScreenPos(point).toList())
+            for gameObject in list(set(Resources.gameObjects) - set(Editor.constantObjects)):
+                if Input.mousePosition is not None:
+                    if Vector2.distance(Input.mousePosition, toScreenPos(gameObject.transform.position)) < 60:
+                        textLines = []
+                        textLines.append("GameObject: " + gameObject.name)
+                        textLines.append("Position: " + str(round(gameObject.transform.position * 100) / 100))
+                        textLines.append("Rotation: " + str(round(gameObject.transform.rotation)))
+                        textLines.append("Local Position: " + str(round(gameObject.transform.localPosition * 100) / 100))
+                        textLines.append("Components: ")
+                        for component in gameObject.components:
+                            textLines.append("      " + str(type(component).__name__))
 
-                if Vector2.distance(Input.mousePosition, toScreenPos(gameObject.transform.position)) < 20:
-                    textLines = []
-                    textLines.append("GameObject: " + gameObject.name)
-                    textLines.append("Position: " + str(round(gameObject.transform.position * 100) / 100))
-                    textLines.append("Rotation: " + str(round(gameObject.transform.rotation)))
-                    textLines.append("Local Position: " + str(round(gameObject.transform.localPosition * 100) / 100))
-                    textLines.append("Components: ")
-                    for component in gameObject.components:
-                        textLines.append("      " + str(type(component).__name__))
+                        boxHeight = len(textLines * rowHeight) + 10
+                        boxWidth = max([Canvas.defaultFont.render(x, True, (255, 255, 255)).get_width() for x in textLines]) + 10
 
-                    boxHeight = len(textLines * rowHeight) + 10
-                    boxWidth = max([Canvas.defaultFont.render(x, True, (255, 255, 255)).get_width() for x in textLines]) + 10
+                        infoBox = pygame.Surface((boxWidth, boxHeight))
 
-                    infoBox = pygame.Surface((boxWidth, boxHeight))
+                        for t, text in enumerate(textLines):
+                            infoBox.blit(Canvas.defaultFont.render(text, True, (255, 255, 255)), (5, 5 + (t * rowHeight)))
 
-                    for t, text in enumerate(textLines):
-                        infoBox.blit(Canvas.defaultFont.render(text, True, (255, 255, 255)), (5, 5 + (t * rowHeight)))
-
-                    borderChange = Input.mousePosition - Vector2(0, boxHeight)
-                    borderChange.x = max(min(borderChange.x, (Canvas.screenSize.x - (boxWidth + 10))), 10)
-                    borderChange.y = max(min(borderChange.y, (Canvas.screenSize.y + (boxHeight - 10))), 10)
-                    Canvas.main.blit(infoBox, borderChange.toList())
+                        borderChange = Input.mousePosition - Vector2(0, boxHeight)
+                        borderChange.x = max(min(borderChange.x, (Canvas.screenSize.x - (boxWidth + 10))), 10)
+                        borderChange.y = max(min(borderChange.y, (Canvas.screenSize.y + (boxHeight - 10))), 10)
+                        Canvas.main.blit(infoBox, borderChange.toList())
 
         if Editor.terminalActive:
             boxHeight = Canvas.screenSize.y
             totalHeight = rowHeight * len(Editor.terminalList)
             boxWidth = Canvas.screenSize.x
-            mockTerminal = pygame.Surface((boxWidth, boxHeight))
+            mockTerminal = pygame.Surface((boxWidth, totalHeight))
             for t, text in enumerate(Editor.terminalList):
-                if ((t - 2) * rowHeight) + (boxHeight - totalHeight) > 0:
-                    mockTerminal.blit(Canvas.defaultFont.render(text, True, (255, 255, 255)),
-                                      (5, ((t - 2) * rowHeight) + (boxHeight - totalHeight)))
+                mockTerminal.blit(Canvas.defaultFont.render(text, True, (255, 255, 255)),
+                                  (5, (t * rowHeight)))
 
-            Canvas.main.blit(mockTerminal, (0, 0))
+            Canvas.main.blit(mockTerminal, (0, Editor.terminalAxis), (0, 0, boxWidth, (boxHeight - (2 * rowHeight)) - Editor.terminalAxis))
 
         terminalInput = GameObject.Find("terminalInput")
         terminalInput.active = Editor.terminalActive
         terminalInput.getComponent(TextField).focused = Editor.terminalActive
-        GameObject.Find("fpsDisplay").update(fpsDelta)
-        terminalInput.update(fpsDelta)
+        if Editor.terminalActive:
+            terminalInput.transform.position = toWorldPos(Vector2(5, Canvas.screenSize.y - rowHeight))
+            terminalInput.update(fpsDelta)
+        fpsDisplay = GameObject.Find("fpsDisplay")
+        fpsDisplay.transform.position = toWorldPos(Vector2(5, 5))
+        fpsDisplay.update(fpsDelta)
 
 
 def update(fpsDelta):
     stillDelta = fpsDelta
     if Time.paused:
         fpsDelta = 0
+
+    fpsDelta *= Time.gameSpeed
 
     Time.time += fpsDelta
     Time.frame += 1
@@ -170,7 +217,9 @@ def removeComponent(componentType):
     Resources.gameObjects[-1].removeComponent(componentType)
 
 
-def instantiate(gameObject, active=True):
+def instantiate(gameObject, active=True, position=None):
+    endPosition = position if position is not None else gameObject.transform.position
+
     newObject = recreate(gameObject)
     newObject.components = []
     for component in gameObject.components:
@@ -178,6 +227,9 @@ def instantiate(gameObject, active=True):
         newComponent.gameObject = newObject
         newObject.components.append(newComponent)
     newObject.active = active
+    newObject.transform.position = endPosition
+    log(" ")
+    log("Created new instance of " + gameObject.name + " at " + str(endPosition))
     return newObject
 
 
@@ -188,7 +240,9 @@ class GameObject:
                                    rotation)
         self.components = [self.transform]
         self.active = True
-        log("Created GameObject " + name + " at " + str(position))
+        if name != "" or position is not None:
+            log(" ")
+            log("Created GameObject " + name + " at " + str(position))
         Resources.gameObjects.append(self)
 
     def update(self, fpsDelta):

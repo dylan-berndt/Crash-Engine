@@ -39,10 +39,16 @@ class Vector2(dict):
             return Vector2(self.x * other, self.y * other)
 
     def __truediv__(self, other):
-        if type(other) == Vector2:
-            return Vector2(self.x/other.x, self.y/other.y)
-        if type(other) == int or type(other) == float:
-            return Vector2(self.x/other, self.y/other)
+        try:
+            if type(other) == Vector2:
+                return Vector2(self.x/other.x, self.y/other.y)
+            if type(other) == int or type(other) == float:
+                return Vector2(self.x/other, self.y/other)
+        except ZeroDivisionError:
+            if type(other) == Vector2:
+                return Vector2(self.x/(other.x + 0.0001), self.y/(other.y + 0.0001))
+            if type(other) == int or type(other) == float:
+                return Vector2(self.x/(other + 0.0001), self.y/(other + 0.0001))
 
     def __abs__(self):
         return Vector2(abs(self.x), abs(self.y))
@@ -59,11 +65,29 @@ class Vector2(dict):
         if item == 1:
             return self.y
 
+    def __lt__(self, other):
+        return self.magnitude() < other.magnitude()
+
+    def __le__(self, other):
+        return self.magnitude() <= other.magnitude()
+
+    def __gt__(self, other):
+        return self.magnitude() > other.magnitude()
+
+    def __ge__(self, other):
+        return self.magnitude() >= other.magnitude()
+
+    def __eq__(self, other):
+        return self.magnitude() == other.magnitude()
+
     def magnitude(self):
         return math.sqrt((self.x ** 2) + (self.y ** 2))
 
     def normalize(self):
         return self / self.magnitude()
+
+    def sum(self):
+        return self.x + self.y
 
     def isInside(self, point1, point2):
         insideX = min(point1.x, point2.x) <= self.x <= max(point1.x, point2.x)
@@ -79,7 +103,18 @@ class Vector2(dict):
     def rotate(self, angle):
         startAngle = math.atan2(self.y, self.x)
         endPosition = Vector2(math.cos(startAngle + angle), math.sin(startAngle + angle)) * self.magnitude()
+        self.x = endPosition.x
+        self.y = endPosition.y
         return endPosition
+
+    def rotateAroundPoint(self, point, angle):
+        thing = self - point
+        thing.rotate(angle)
+        thing = thing + point
+        self.x = thing.x
+        self.y = thing.y
+        return self
+
 
     @staticmethod
     def distance(point1, point2):

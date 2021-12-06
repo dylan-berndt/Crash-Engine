@@ -2,18 +2,20 @@ GameObject(Vector2(0, 0), 0, "mainCamera")
 addComponent(Camera(mainCamera=True))
 
 GameObject(Vector2(-4, 0), 0, "collision")
-addComponent(BoxCollider(size=Vector2(2, 2)))
-addComponent(Rigidbody(velocity=Vector2(2, 0.5), gravity=Vector2(0, 9.8)))
+addComponent(CircleCollider(size=Vector2(1, 1), sections=10))
+addComponent(Rigidbody(velocity=Vector2(2, 0), bounce=1, friction=0, gravity=Vector2(0, 9.8)))
 
 instantiate(Resources.gameObjects[-1])
 Resources.gameObjects[-1].name = "collision2"
-Resources.gameObjects[-1].transform.position = Vector2(4, 0)
-getComponent(Rigidbody).velocity = Vector2(-3, 0.25)
+Resources.gameObjects[-1].transform.position = Vector2(4, -2)
+getComponent(Rigidbody).velocity = Vector2(-2, 0)
 
 instantiate(Resources.gameObjects[-1])
 Resources.gameObjects[-1].name = "collision3"
 Resources.gameObjects[-1].transform.position = Vector2(-2, -1)
 getComponent(Rigidbody).velocity = Vector2(0, 2)
+getComponent(Rigidbody).static = False
+addComponent(BoxCollider(size=Vector2(1, 1), offset=Vector2(1.5, 1.5)))
 
 GameObject(Vector2(0, 4), 0, "floor")
 addComponent(BoxCollider(size=Vector2(17, 1)))

@@ -22,12 +22,21 @@ def recreate(copyThing):
             copyobj.__dict__[name] = copy.deepcopy(attr)
     return copyobj
 
+def openFile(fileTypes=None, title="Open File"):
+    top = tkinter.Tk()
+    top.withdraw()
+    fileName = tkinter.filedialog.askopenfilename(parent=top, initialdir=Resources.resourceLocation, filetypes=fileTypes, title=title)
+    top.destroy()
+    return fileName
+
+def openFolder():
+    pass
 
 def loadSprites(folder, scale=1):
     items = []
     loadList = os.listdir(Resources.resourceLocation + folder)
     for item in loadList:
-        if item.endswith(".png"):
+        if item.endswith(".png") or item.endswith(".jpg"):
             imageLoad = loadSprite(folder + "\\" + item[:-4])
             imageSize = imageLoad.get_rect().size
             imageSize = Vector2(imageSize[0], imageSize[1]) * scale
@@ -36,12 +45,21 @@ def loadSprites(folder, scale=1):
     return items
 
 
-def loadSprite(name):
-    name = Resources.resourceLocation + name
+def loadSprite(startName, absolutePath=False):
+    if absolutePath:
+        name = startName[:-4]
+    else:
+        name = Resources.resourceLocation + startName
     try:
         return pygame.image.load(os.path.join(name+".png")).convert_alpha()
     except FileNotFoundError:
-        print("No image at: " + name + ".png")
+        try:
+            return pygame.image.load(os.path.join(name+".jpg")).convert_alpha()
+        except FileNotFoundError:
+            if absolutePath:
+                print("No image at " + startName[:-4])
+            else:
+                print("No image named " + startName + " at " + Resources.resourceLocation)
 
 
 def loadMaterial(name):
