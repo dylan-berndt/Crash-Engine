@@ -186,39 +186,39 @@ class PolygonCollider:
             lineList.append(maximum)
             self.lines.append(lineList)
 
-        # self.triangles = []
-        #
-        # pointList = self.points.copy()
-        # for t in range(len(pointList) - 2):
-        #     boundingPointIndex = None
-        #
-        #     for possibleTriangle in range(len(pointList)):
-        #         triangleWorks = True
-        #
-        #         trianglePoints = [pointList[((possibleTriangle - 1) % len(pointList))],
-        #                            pointList[possibleTriangle],
-        #                            pointList[((possibleTriangle + 1) % len(pointList))]]
-        #
-        #         if triangleIsClockwise(trianglePoints):
-        #             triangleWorks = False
-        #
-        #         slicedList = pointList.copy()
-        #         for point in trianglePoints:
-        #             slicedList.remove(point)
-        #         for point in slicedList:
-        #             if insideTriangle(trianglePoints, point):
-        #                 triangleWorks = False
-        #                 break
-        #
-        #         if triangleWorks:
-        #             boundingPointIndex = possibleTriangle
-        #             break
-        #
-        #     if boundingPointIndex is not None:
-        #         self.triangles.append([pointList[((boundingPointIndex - 1) % len(pointList))],
-        #                                pointList[boundingPointIndex],
-        #                                pointList[((boundingPointIndex + 1) % len(pointList))]])
-        #         pointList.remove(pointList[boundingPointIndex])
+        self.triangles = []
+
+        pointList = self.points.copy()
+        for t in range(len(pointList) - 2):
+            boundingPointIndex = None
+
+            for possibleTriangle in range(len(pointList)):
+                triangleWorks = True
+
+                trianglePoints = [pointList[((possibleTriangle - 1) % len(pointList))],
+                                   pointList[possibleTriangle],
+                                   pointList[((possibleTriangle + 1) % len(pointList))]]
+
+                if triangleIsClockwise(trianglePoints):
+                    triangleWorks = False
+
+                slicedList = pointList.copy()
+                for point in trianglePoints:
+                    slicedList.remove(point)
+                for point in slicedList:
+                    if insideTriangle(trianglePoints, point):
+                        triangleWorks = False
+                        break
+
+                if triangleWorks:
+                    boundingPointIndex = possibleTriangle
+                    break
+
+            if boundingPointIndex is not None:
+                self.triangles.append([pointList[((boundingPointIndex - 1) % len(pointList))],
+                                       pointList[boundingPointIndex],
+                                       pointList[((boundingPointIndex + 1) % len(pointList))]])
+                pointList.remove(pointList[boundingPointIndex])
 
     def getCollisions(self, fpsDelta, positionAdd):
         collisions = []
