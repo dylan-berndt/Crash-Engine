@@ -1,0 +1,27 @@
+from Player import *
+
+camera = GameObject(Vector2(0, 0), "camera")
+camera.addComponent(Camera())
+
+bottom = GameObject(Vector2(0, -3.5), "bottom")
+bottom.addComponent(Rigidbody(static=True)).addComponent(BoxCollider(size=Vector2(6, 1)))
+
+top = GameObject(Vector2(0, 3.5), "top")
+top.addComponent(Rigidbody(static=True)).addComponent(BoxCollider(size=Vector2(6, 1)))
+
+left = GameObject(Vector2(-3.5, 0), "left")
+left.addComponent(Rigidbody(static=True)).addComponent(BoxCollider(size=Vector2(1, 8)))
+
+right = GameObject(Vector2(3.5, 0), "right")
+right.addComponent(Rigidbody(static=True)).addComponent(BoxCollider(size=Vector2(1, 8)))
+
+ball1 = GameObject(Vector2(1, 0), "ball1")
+ball1.addComponent(Rigidbody(gravity=Vector2(0, -9.8), velocity=Vector2(2, 0))).addComponent(CircleCollider(size=Vector2(1, 1)))
+
+ball2 = GameObject(Vector2(-1, 0), "ball2")
+ball2.addComponent(Rigidbody(gravity=Vector2(0, -9.8), velocity=Vector2(-1, 0))).addComponent(StarCollider(size=Vector2(1, 1)))
+
+player = GameObject(Vector2(0, 0), "player")
+player.addComponent(Player())
+
+Editor.flags = ["play", "widgets"]
