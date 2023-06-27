@@ -1,5 +1,5 @@
 from Crash import *
 
-loadScene("start")
+loadScene("Scenes/start")
 
 init(Vector2(1200, 600))

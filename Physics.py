@@ -1,7 +1,7 @@
 from Globals import *
 
 
-class Rigidbody:
+class Rigidbody(Component):
     def __init__(self, velocity=None, static=False, mass=1, restitution=1, angularVelocity=0, gravity=None,
                  colliderMass=False, density=1):
         self.gameObject = None
@@ -44,7 +44,7 @@ class Rigidbody:
                     point.rotateAroundPoint(collider.com, math.radians(rotation))
 
 
-class Collider:
+class Collider(Component):
     def __init__(self, points, isTrigger=False):
         self.gameObject = None
         self.rigidbody = None
@@ -53,6 +53,7 @@ class Collider:
 
         self.points = points
         self.com = None
+        self.moment = None
         self.area = None
         self.findCOM()
 
@@ -66,7 +67,7 @@ class Collider:
 
         Physics.colliders.append(self)
 
-    def destroy(self):
+    def __del__(self):
         Physics.colliders.remove(self)
 
     def rigidbodyCheck(self):
@@ -88,6 +89,12 @@ class Collider:
             normal = Vector2(-direction.y, direction.x).normalize()
             dot = Vector2.dot(normal, force)
             self.rigidbody.angularVelocity += dot * direction.magnitude()
+
+    def applyTorque(self, force, point):
+        if not self.rigidbody.static:
+            direction = point - self.gameObject.transform.localToWorld(self.com)
+            mag = direction.magnitude
+            self.rigidbody.angularVelocity += None
 
     def collisions(self, fpsDelta):
         collided = False

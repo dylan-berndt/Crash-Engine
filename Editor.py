@@ -1,8 +1,8 @@
-from Text import *
+from UI import *
 
 
 def log(message, color=None):
-    logField = Editor.logField
+    logField = Editor.logField.document
     start = len(logField.text)
     logField.insert_text(len(logField.text), " " + str(message) + "\n")
     if len(logField.text) > 1000:
@@ -16,41 +16,33 @@ def log(message, color=None):
 
 def generateConsole(window, command):
     windowSize = window.get_size()
-    batch = Screen.renderGroups["console"]["batch"]
-    back = Screen.renderGroups["console"]["groups"]["-1"]
-    front = Screen.renderGroups["console"]["groups"]["0"]
+    batch = Screen.layers["console"]
+    back = Screen.groups["-1"]
+    front = Screen.groups["0"]
 
-    createRectangle(Vector2(8, windowSize[1] - 6), Vector2(100, windowSize[1] - 24), (0, 0, 0), batch, back)
+    field(Vector2(8, windowSize[1] - 6), Vector2(100, windowSize[1] - 24), batch, back)
 
     Editor.fpsDisplay = pyglet.text.Label("0", "Source Code Pro", 10, True, batch=batch, group=front)
     Editor.fpsDisplay.position = 12, windowSize[1] - 20
 
-    createRectangle(Vector2(8, 272), Vector2(100, 248), (0, 0, 0), batch, back)
+    field(Vector2(8, 272), Vector2(100, 248), batch, back)
 
-    titleField = Document("Console: ", Editor.logSettings)
-    titleLayout = pyglet.text.layout.TextLayout(titleField, windowSize[0] - 22, 20, batch=batch, group=front)
-    titleLayout.position = 12, 250
+    titleField = TextWidget("Console: ", Editor.logSettings, windowSize[0] - 22, batch=batch, group=front,
+                            position=Vector2(12, 252))
 
-    createLines(Vector2(8, 272), Vector2(100, 248), (255, 255, 255), batch, back)
-    createRectangle(Vector2(8, 242), Vector2(408, 38), (0, 0, 0), batch, back)
+    field(Vector2(8, 242), Vector2(windowSize[0] - 10, 38), batch, back)
 
-    logField = Document(" ", Editor.logSettings)
-    logField.delete_text(0, 1)
-    logLayout = Layout(logField, windowSize[0] - 22, 200, multiline=True, batch=batch, group=front)
-    logLayout.position = 12, 40
+    logField = TextWidget(" ", Editor.logSettings, windowSize[0] - 22, multiline=True, batch=batch,
+                          group=front, position=Vector2(12, 42), height=196)
 
-    createRectangle(Vector2(8, 32), Vector2(windowSize[0] - 10, 8), (0, 0, 0), batch, back)
+    field(Vector2(8, 32), Vector2(windowSize[0] - 10, 8), batch, back)
 
-    commandField = Document(" ", Editor.commandSettings, command=command)
-    commandLayout = Layout(commandField, windowSize[0] - 22, 20, batch=batch, group=front)
-    commandLayout.position = 12, 10
-    caret = Caret(commandLayout, color=(255, 255, 255), batch=batch)
-
-    createLines(Vector2(8, 32), Vector2(windowSize[0] - 10, 8), (255, 255, 255), batch, back)
+    commandField = TextWidget(" ", Editor.commandSettings, windowSize[0] - 22, command=command, batch=batch,
+                              group=front, position=Vector2(12, 12), editable=True)
 
     Editor.commandField = commandField
     Editor.logField = logField
-    Editor.logLayout = logLayout
+    Editor.logLayout = logField.layout
 
 
 def updateEditor(fps):
@@ -59,7 +51,7 @@ def updateEditor(fps):
 
 def updateWidgets(fps, normals=False):
     widgetShapes = []
-    batch = Screen.renderGroups["widgets"]["batch"]
+    batch = Screen.layers["widgets"]
 
     for collider in Physics.colliders:
         transform = collider.gameObject.transform
@@ -76,17 +68,28 @@ def updateWidgets(fps, normals=False):
         p5 = transform.localToScreen(collider.com)
         widgetShapes.append(pyglet.shapes.Circle(p5.x, p5.y, 1, color=(255, 255, 255), batch=batch))
 
-    Editor.widgetShapes = widgetShapes
+    for gameObject in Resources.gameObjects:
+        for component in gameObject.components:
+            if isinstance(component, Button):
+                p = gameObject.transform.worldToScreen(gameObject.transform.position)
+                s = component.size * Screen.unit
+                p1 = p - s // 2
+                p2 = p + s // 2
+                lines = p1, Vector2(p2.x, p1.y), p2, Vector2(p1.x, p2.y)
+                for i in range(len(lines)):
+                    d1, d2 = lines[i], lines[(i + 1) % len(lines)]
+                    widgetShapes.append(pyglet.shapes.Line(d1.x, d1.y, d2.x, d2.y,
+                                                           color=(0, 255, 0), batch=batch,))
+
+    Editor.debugShapes = widgetShapes
 
 
-def createLines(p1, p2, color, batch, group):
+def field(p1, p2, batch, group):
     lines = p1, Vector2(p2.x, p1.y), p2, Vector2(p1.x, p2.y)
     for i in range(len(lines)):
         d1, d2 = lines[i], lines[(i + 1) % len(lines)]
-        Editor.consoleShapes.append(pyglet.shapes.Line(d1.x, d1.y, d2.x, d2.y, color=color, batch=batch,
+        Editor.consoleShapes.append(pyglet.shapes.Line(d1.x, d1.y, d2.x, d2.y, color=(255, 255, 255), batch=batch,
                                                        group=group))
-
-
-def createRectangle(p1, p2, color, batch, group):
-    Editor.consoleShapes.append(pyglet.shapes.Rectangle(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, color, batch=batch,
+    Editor.consoleShapes.append(pyglet.shapes.Rectangle(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, (0, 0, 0), batch=batch,
                                                         group=group))
+

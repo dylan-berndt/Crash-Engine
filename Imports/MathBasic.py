@@ -35,12 +35,17 @@ def clockwise(l1, l2):
 
 
 def projectOntoLine(line, point):
-    ap = point - line[0]
-    ab = line[1] - line[0]
-    t = Vector2.dot(ap, ab) / Vector2.dot(ab, ab)
-    t = max(0, min(1, t))
-    result = line[0] + ab * t
-    return result
+    ap = line[1] - line[0]
+    ab = point - line[0]
+    v = (ab.x ** 2 + ab.y ** 2)
+    if v != 0:
+        t = (ap.x * ab.x + ap.y * ab.y) / (ab.x ** 2 + ab.y ** 2)
+        if t < 0:
+            return line[1]
+        if t > 1:
+            return line[0]
+        return line[1] + (ab * t)
+    return line[0]
 
 
 def lerp(a, b, t):
@@ -75,6 +80,9 @@ class Vector2:
             return Vector2(self.x * other.x, self.y * other.y)
         elif type(other) == int or type(other) == float:
             return Vector2(self.x * other, self.y * other)
+
+    def __floordiv__(self, other):
+        return (self / other).__floor__()
 
     def __truediv__(self, other):
         try:
@@ -117,6 +125,9 @@ class Vector2:
 
     def __eq__(self, other):
         return self.magnitude() == other.magnitude()
+
+    def __floor__(self):
+        return Vector2(int(self.x), int(self.y))
 
     def magnitude(self):
         return math.sqrt((self.x ** 2) + (self.y ** 2))
