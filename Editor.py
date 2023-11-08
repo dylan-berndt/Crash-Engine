@@ -1,44 +1,38 @@
 from UI import *
 
 
-def log(message, color=None):
-    logField = Editor.logField.document
-    start = len(logField.text)
-    logField.insert_text(len(logField.text), " " + str(message) + "\n")
-    if len(logField.text) > 1000:
-        logField.delete_text(0, len(logField.text) - 1000)
-    Editor.logLayout.view_y = -Editor.logLayout.content_height
-    if color is not None:
-        logField.set_style(start, len(logField.text), attributes={"color": color})
-    logField.insert_text(len(logField.text), " ")
-    logField.set_style(len(logField.text) - 1, len(logField.text), attributes={"color": (255, 255, 255, 255)})
+def log(*args, color=None):
+    for message in args:
+        logField = Editor.logField.document
+        start = len(logField.text)
+        logField.insert_text(len(logField.text), " " + str(message) + "\n")
+        Editor.logLayout.view_y = -Editor.logLayout.content_height
+        if color is not None:
+            logField.set_style(start, len(logField.text), attributes={"color": color})
+        logField.insert_text(len(logField.text), " ")
+        logField.set_style(len(logField.text) - 1, len(logField.text), attributes={"color": (255, 255, 255, 255)})
 
 
 def generateConsole(window, command):
     windowSize = window.get_size()
-    batch = Screen.layers["console"]
+    batch = Screen.batches[Screen.layers.index("console")]
     back = Screen.groups["-1"]
     front = Screen.groups["0"]
 
-    field(Vector2(8, windowSize[1] - 6), Vector2(100, windowSize[1] - 24), batch, back)
+    field(Vector2(8, 384), Vector2(100, 354), batch, back)
 
-    Editor.fpsDisplay = pyglet.text.Label("0", "Source Code Pro", 10, True, batch=batch, group=front)
-    Editor.fpsDisplay.position = 12, windowSize[1] - 20
+    titleField = TextWidget(" Console: ", Editor.logSettings, windowSize[0] - 22, batch=batch, group=front,
+                            position=Vector2(12, 361))
 
-    field(Vector2(8, 272), Vector2(100, 248), batch, back)
-
-    titleField = TextWidget("Console: ", Editor.logSettings, windowSize[0] - 22, batch=batch, group=front,
-                            position=Vector2(12, 252))
-
-    field(Vector2(8, 242), Vector2(windowSize[0] - 10, 38), batch, back)
+    field(Vector2(8, 348), Vector2(windowSize[0] - 10, 44), batch, back)
 
     logField = TextWidget(" ", Editor.logSettings, windowSize[0] - 22, multiline=True, batch=batch,
-                          group=front, position=Vector2(12, 42), height=196)
+                          group=front, position=Vector2(12, 48), height=296)
 
-    field(Vector2(8, 32), Vector2(windowSize[0] - 10, 8), batch, back)
+    field(Vector2(8, 40), Vector2(windowSize[0] - 10, 8), batch, back)
 
     commandField = TextWidget(" ", Editor.commandSettings, windowSize[0] - 22, command=command, batch=batch,
-                              group=front, position=Vector2(12, 12), editable=True)
+                              group=front, position=Vector2(12, 15), editable=True)
 
     Editor.commandField = commandField
     Editor.logField = logField
@@ -90,6 +84,7 @@ def field(p1, p2, batch, group):
         d1, d2 = lines[i], lines[(i + 1) % len(lines)]
         Editor.consoleShapes.append(pyglet.shapes.Line(d1.x, d1.y, d2.x, d2.y, color=(255, 255, 255), batch=batch,
                                                        group=group))
-    Editor.consoleShapes.append(pyglet.shapes.Rectangle(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, (0, 0, 0), batch=batch,
-                                                        group=group))
+    # i have no idea why i have to do this +1 -1 horseshit in the directions that i have to but im gonna kablooey
+    Editor.consoleShapes.append(pyglet.shapes.Rectangle(p1.x, p1.y - 1, p2.x - p1.x - 1, p2.y - p1.y + 1, (0, 0, 0),
+                                                        batch=batch, group=group))
 

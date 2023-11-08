@@ -4,7 +4,7 @@ import numpy as np
 import os
 from .Vector import *
 import pyglet.window.key as key
-import pyglet.gl as gl
+import pyglet.gl.gl as gl
 import time
 import sys
 
@@ -40,5 +40,11 @@ class Component:
     def on_key_release(self, symbol, modifiers):
         pass
 
+    def on_draw(self):
+        pass
+
     def destroy(self):
+        pass
+
+    def start(self):
         pass

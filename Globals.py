@@ -5,7 +5,7 @@ import json
 
 
 def log(message):
-    Editor.log += message + "\n"
+    Editor.log += str(message) + "\n"
 
 
 class Screen:
@@ -17,28 +17,35 @@ class Screen:
 
     sprites = []
 
-    layers = {"default": pyglet.graphics.Batch(),
-              "widgets": pyglet.graphics.Batch(),
-              "console": pyglet.graphics.Batch()}
+    layers = ["default", "widgets", "console"]
+    batches = [pyglet.graphics.Batch() for _ in range(3)]
 
-    groups = {"0": pyglet.graphics.OrderedGroup(0),
-              "-1": pyglet.graphics.OrderedGroup(-1)}
+    groups = {"0": pyglet.graphics.Group(order=0),
+              "-1": pyglet.graphics.Group(order=-1)}
 
     widgets = []
     active_widget = None
+
+    buffers = pyglet.image.get_buffer_manager()
+
+    @staticmethod
+    def add_layer(name, order):
+        Screen.layers.insert(order, name)
+        Screen.batches.insert(order, pyglet.graphics.Batch())
+        Editor.toggle(name)
 
     @staticmethod
     def get_render_set(name, order, parent=None):
         order = str(int(order))
         if name in Screen.layers:
-            layer = Screen.layers[name]
+            num = Screen.layers.index(name)
         else:
-            Screen.layers[name] = {}
-            Screen.layers[name] = layer = pyglet.graphics.Batch()
+            num = Screen.layers.index("default")
+        layer = Screen.batches[num]
         if order in Screen.groups:
             group = Screen.groups[order]
         else:
-            Screen.groups[order] = group = pyglet.graphics.OrderedGroup(int(order))
+            Screen.groups[order] = group = pyglet.graphics.Group(order=int(order))
         group.parent = parent if parent is not None else group.parent
         return layer, group
 
@@ -60,12 +67,10 @@ class Screen:
 
 
 class Editor:
-    flags = ["play"]
+    flags = ["play", "default"]
     log = ""
 
     constantCommands = []
-
-    fpsDisplay = None
 
     logField = None
     logLayout = None
@@ -74,10 +79,10 @@ class Editor:
     previousCommands = []
     commandNum = 0
 
-    logSettings = dict(font_name='Source Code Pro', font_size=10,
-                       color=(255, 255, 255, 255), background_color=(0, 0, 0, 255), bold=True)
-    commandSettings = dict(font_name='Source Code Pro', font_size=10,
-                           color=(255, 255, 255, 255), background_color=(0, 0, 0, 0), bold=True)
+    logSettings = dict(font_name='Calibri', font_size=12,
+                       color=(255, 255, 255, 255), background_color=(0, 0, 0, 255))
+    commandSettings = dict(font_name='Calibri', font_size=12,
+                           color=(255, 255, 255, 255), background_color=(0, 0, 0, 0))
 
     debugShapes = []
     consoleShapes = []
@@ -94,6 +99,8 @@ class Resources:
     gameObjects = []
     resourcePath = ""
     cameras = []
+
+    keep = []
 
     sceneName = ""
 

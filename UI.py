@@ -1,3 +1,6 @@
+import glob
+
+import pyglet.sprite
 import pyperclip
 from Globals import *
 from ObjectManager import Transform
@@ -32,7 +35,7 @@ class Scroll(Component):
 
 
 class ScissorGroup(pyglet.graphics.Group):
-    def __init__(self, position, size, parent=None):
+    def __init__(self, position, size, parent=None, order=0):
         self.position = position
         self.size = size
 
@@ -41,18 +44,16 @@ class ScissorGroup(pyglet.graphics.Group):
 
         self.was_scissor_enabled = False
 
-        super().__init__(parent)
+        super().__init__(parent=parent, order=order)
 
     def clear(self):
         self.visible = False
 
     def set_state(self):
-        gl.glPushAttrib(gl.GL_ENABLE_BIT | gl.GL_TRANSFORM_BIT | gl.GL_CURRENT_BIT)
-
         self.was_scissor_enabled = gl.glIsEnabled(gl.GL_SCISSOR_TEST)
         gl.glEnable(gl.GL_SCISSOR_TEST)
 
-        gl.glTranslatef(-self.view_x, -self.view_y, 0)
+        # gl.glTranslatef(-self.view_x, -self.view_y, 0)
 
         size = self.size * Screen.unit
         width, height = size.x, size.y
@@ -64,10 +65,10 @@ class ScissorGroup(pyglet.graphics.Group):
                      int(width), int(height))
 
     def unset_state(self):
-        gl.glTranslatef(self.view_x, self.view_y, 0)
-        if self.was_scissor_enabled:
+        # gl.glTranslatef(self.view_x, self.view_y, 0)
+
+        if not self.was_scissor_enabled:
             gl.glDisable(gl.GL_SCISSOR_TEST)
-        gl.glPopAttrib()
 
 
 class Button(Component):
@@ -98,10 +99,11 @@ class Button(Component):
 
 
 class TextWidget(Component):
-    def __init__(self, text, style, width, batch=Screen.layers["default"],
+    def __init__(self, text, style, width, batch=None,
                  group=Screen.groups["0"], position=None, editable=False,
                  multiline=False, height=None, command=None, hint="",
                  hint_color=None):
+        batch = batch if batch is not None else Screen.batches[Screen.layers.index("default")]
         self.gameObject = None
         self.position = position if position is not None else Vector2(0, 0)
 

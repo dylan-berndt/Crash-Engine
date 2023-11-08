@@ -20,14 +20,13 @@ class Window(pyglet.window.Window):
         Screen.canvas = self
         Screen.canvas.set_caption(title)
         Screen.size = windowSize
+        self.rate = rate
 
         generateConsole(self, command)
 
         loadScene(sceneName)
 
-        pyglet.clock.schedule_interval(update, rate)
-
-        pyglet.app.run()
+        pyglet.app.run(rate)
 
     def on_mouse_press(self, x, y, button, modifiers):
         for gameObject in Resources.gameObjects:
@@ -66,10 +65,14 @@ class Window(pyglet.window.Window):
 
     def on_draw(self):
         Screen.canvas.clear()
-        for layer in Screen.layers:
-            if not (layer == "widget" and "widgets" not in Editor.flags):
-                if not (layer == "console" and "console" not in Editor.flags):
-                    Screen.layers[layer].draw()
+        for gameObject in Resources.gameObjects:
+            for component in gameObject.components:
+                component.on_draw()
+
+        for l in range(len(Screen.batches)):
+            layer = Screen.layers[l]
+            if layer in Editor.flags:
+                Screen.batches[l].draw()
             if layer == "default":
                 for canvas in GameObject.getEveryComponentOfType("Canvas"):
                     canvas.blit()
@@ -104,16 +107,20 @@ class Window(pyglet.window.Window):
                 caret = Screen.active_widget.caret
                 caret.position, caret.mark = 0, len(Screen.active_widget.document.text)
 
-        # if symbol == key.UP and "console" in Editor.flags and Editor.previousCommands:
-        #     Editor.commandNum = max(Editor.commandNum - 1, -len(Editor.previousCommands))
-        #     Editor.commandField.document.text = Editor.previousCommands[Editor.commandNum]
-        #
-        # if symbol == key.DOWN and "console" in Editor.flags:
-        #     Editor.commandNum = min(Editor.commandNum + 1, len(Editor.previousCommands) + 1)
-        #     if Editor.commandNum == 0:
-        #         Editor.commandField.document.text = ""
-        #     else:
-        #         Editor.commandField.document.text = Editor.previousCommands[Editor.commandNum]
+        if symbol == key.UP and "console" in Editor.flags and Editor.previousCommands:
+            edit = Editor.commandField
+            Editor.commandNum = max(Editor.commandNum - 1, -len(Editor.previousCommands))
+            edit.document.text = Editor.previousCommands[Editor.commandNum]
+            edit.caret.position = len(edit.document.text)
+
+        if symbol == key.DOWN and "console" in Editor.flags:
+            edit = Editor.commandField
+            Editor.commandNum = min(Editor.commandNum + 1, 0)
+            if Editor.commandNum == 0:
+                edit.document.text = ""
+            else:
+                edit.document.text = Editor.previousCommands[Editor.commandNum]
+            edit.caret.position = len(edit.document.text)
 
         if symbol == key.SLASH and (modifiers & key.MOD_CTRL):
             Editor.toggle("console")
@@ -157,8 +164,7 @@ class Window(pyglet.window.Window):
 
 
 def update(dt):
-    fps = pyglet.clock.get_fps()
-    Editor.fpsDisplay.text = str(round(fps * 100) / 100)
+    fps = 1 / dt
 
     for constant in Editor.constantCommands:
         try:
@@ -189,12 +195,14 @@ def update(dt):
 
 
 def loadScene(filePath):
+    Screen.canvas.clear()
+    pyglet.clock.get_default().unschedule(update)
     Screen.activate_widget(Editor.commandField)
     keep = []
     Resources.sceneName = filePath
 
     while Resources.gameObjects:
-        if not hasattr(Resources.gameObjects[0], "keepOnLoad"):
+        if Resources.gameObjects[0] not in Resources.keep:
             destroy(Resources.gameObjects[0])
         else:
             keep.append(Resources.gameObjects.pop(0))
@@ -211,6 +219,12 @@ def loadScene(filePath):
     read = "\n".join(split)
     program = compile(read, os.path.join(Resources.resourcePath, filePath + ".scene"), mode="exec")
     exec(program)
+
+    for gameObject in Resources.gameObjects:
+        for component in gameObject.components:
+            component.start()
+
+    pyglet.clock.get_default().schedule_interval(update, Screen.canvas.rate)
 
     log("Loaded scene: (" + filePath + ")", color=(0, 255, 0, 255))
 
@@ -251,3 +265,5 @@ def command(text):
                     except Exception as e:
                         log("Error: ", color=(255, 50, 50, 255))
                         log(str(e))
+        Editor.commandNum = 0
+        Editor.commandField.document.text = ""

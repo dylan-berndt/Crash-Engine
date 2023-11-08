@@ -1,13 +1,24 @@
 from Globals import *
+from pyglet.gl import *
+from ctypes import *
+from array import *
 
 
-def cubic_bezier_ease(x):
+def ease_in_out_cubic(x):
     m = x % 1
     f = x // 1
     if m < 0.5:
         return f + 4 * (m ** 3)
     else:
         return f + 1 - ((-2 * m + 2) ** 3) / 2
+
+
+def ease_out_cubic(x):
+    return 1 - (1 - x) ** 3
+
+
+def ease_in_cubic(x):
+    return x ** 3
 
 
 def sine_ease(x):
@@ -34,204 +45,180 @@ class Camera(Component):
         Screen.camera = self
 
 
-class SpriteRenderer(Component):
-    def __init__(self, sprite, group=0, batch="default", alpha=255):
+shader_types = {"vert": "vertex",
+                "frag": "fragment",
+                "comp": "compute",
+                "geom": "geometry",
+                "tesc": "tesscontrol",
+                "tese": "tessevaluation"}
+
+
+class Shader(pyglet.graphics.shader.ShaderProgram):
+    def __init__(self, path, sprite_vert=False):
+        shaders = []
+
+        self.handle = {}
+
+        if sprite_vert:
+            default_vert = pyglet.graphics.shader.Shader(pyglet.sprite.vertex_source, "vertex")
+            shaders.append(default_vert)
+
+        p = os.path.join(Resources.resourcePath, path)
+        for f in os.listdir(p):
+            file = open(os.path.join(Resources.resourcePath, path, f))
+            extension = f.split(".")[-1]
+            shader = pyglet.graphics.shader.Shader(file.read(), shader_types[extension])
+            shaders.append(shader)
+
+        super().__init__(*shaders)
+
+    # def set_uniforms(self):
+    #     for key, value in self.handle.items():
+    #         location = glGetUniformLocation(self.id, create_string_buffer(key.encode('utf-8')))
+    #         if location == -1:
+    #             print("NOT FOUND:", key)
+    #         c_array = (c_int * len(value))()
+    #         c_array[:] = value
+    #         ptr = cast(c_array, POINTER(c_int))
+    #         glProgramUniform2iv(self.id, location, len(value), ptr)
+    #     self.handle = {}
+    #
+    # def __setitem__(self, key, value):
+    #     if type(value) == list:
+    #         self.handle[key] = value
+    #     else:
+    #         super().__setitem__(key, value)
+
+
+# class SpriteGroup(pyglet.graphics.Group):
+#     def __init__(self, texture, blend_src, blend_dest, program, parent=None):
+#         super().__init__(parent)
+#
+#         self.texture = texture
+#         self.blend_src = blend_src
+#         self.blend_dest = blend_dest
+#         self.program = program
+#
+#     def set_state(self):
+#         self.program.use()
+#
+#         glActiveTexture(GL_TEXTURE0)
+#         glBindTexture(self.texture.target, self.texture.id)
+#
+#         glEnable(GL_BLEND)
+#         glBlendFunc(self.blend_src, self.blend_dest)
+#
+#         if hasattr(self.program, "set_uniforms"):
+#             self.program.set_uniforms()
+#
+#     def unset_state(self):
+#         glDisable(GL_BLEND)
+#         self.program.stop()
+#
+#     def __repr__(self):
+#         return "{0}({1})".format(self.__class__.__name__, self.texture)
+#
+#     def __eq__(self, other):
+#         return (other.__class__ is self.__class__ and
+#                 self.program is other.program and
+#                 self.parent == other.parent and
+#                 self.texture.target == other.texture.target and
+#                 self.texture.id == other.texture.id and
+#                 self.blend_src == other.blend_src and
+#                 self.blend_dest == other.blend_dest)
+#
+#     def __hash__(self):
+#         return hash((self.program, self.parent,
+#                      self.texture.id, self.texture.target,
+#                      self.blend_src, self.blend_dest))
+#
+#
+# pyglet.sprite.Sprite.group_class = SpriteGroup
+
+
+class Sprite(pyglet.sprite.Sprite, Component):
+    def __init__(self, img, group=0, batch="default", x=0, y=0, program=None, ppu=Screen.unit):
+        if type(img) == str:
+            img = load_image(img)
+
         self.gameObject = None
 
-        self.destroyed = False
+        self._program = program
+        if not program:
+            self._program = pyglet.sprite.get_default_shader()
 
-        self._sprite = None
+        if isinstance(batch, pyglet.graphics.Batch) and isinstance(group, pyglet.graphics.Group):
+            b, g = batch, group
+        else:
+            b, g = Screen.get_render_set(batch, group)
 
-        self.sprites = [sprite]
+        self.ppu = ppu
 
-        self._alpha = alpha
-
-        self._batch = batch if isinstance(batch, pyglet.graphics.Batch) else Screen.layers[batch]
-        if type(group) in [int, str]:
-            n, group = Screen.get_render_set("none", str(int(group)))
-        self._group = group
-
-        self.sprite = sprite
-
-        self.destroyed = self.sprite is None
-
-        if self.sprite is not None:
-            self.batch = batch
-            self.group = group
+        super().__init__(img, x=x, y=y, batch=b, group=g)
 
     def __deepcopy__(self, memo):
-        return SpriteRenderer(self.sprite, self.group, self.batch)
+        img = self.image.get_region(0, 0, self.image.width, self.image.height)
+        return Sprite(img, self._group, self._batch, self.x, self.y, self._program, self.ppu)
 
     def destroy(self):
-        for sprite in self.sprites:
-            if not sprite.destroyed:
-                sprite.destroyed = True
-                sprite.delete()
-
-    @property
-    def batch(self):
-        return self._batch
-
-    @batch.setter
-    def batch(self, batch):
-        if self.sprite is None:
-            return
-        if type(batch) == str:
-            self._batch = Screen.layers[batch]
-        elif type(batch) == pyglet.graphics.Batch:
-            self._batch = batch
-        self.sprite.batch = self._batch
-        if hasattr(self, "_group"):
-            self.sprite.group = self._group
-
-    @property
-    def group(self):
-        return self._group
-
-    @group.setter
-    def group(self, group):
-        if self.sprite is None:
-            return
-        if type(group) in [int, str]:
-            n, group = Screen.get_render_set("none", group)
-            self._group = group
-        elif isinstance(group, pyglet.graphics.Group):
-            self._group = group
-        if hasattr(self, "_batch"):
-            self.sprite.batch = self._batch
-        self.sprite.group = self._group
+        self.delete()
 
     def update(self, fpsDelta):
-        if self.useable():
-            self.sprite.visible = self.gameObject.active and self.sprite.visible
+        self.visible = self.visible and self.gameObject.active
 
-    def late_update(self, fpsDelta):
-        if self.useable():
-            self.spritePosition()
+    def on_draw(self):
+        self.position()
 
-    def useable(self):
-        if self.sprite is None:
-            self.destroyed = True
-            return False
-        if not hasattr(self.sprite._vertex_list, "vertices"):
-            self.destroyed = True
-        if not hasattr(self.sprite._texture, "anchor_x"):
-            self.destroyed = True
-        return not self.destroyed
+    def position(self):
+        transform = self.gameObject.transform
 
-    @property
-    def visible(self):
-        return self.sprite.visible
+        position = transform.worldToScreen(transform.position)
+        dx, dy = math.cos(math.radians(360-transform.rotation)), \
+                 math.sin(math.radians(360-transform.rotation))
+        size = Vector2(self.width / 2, self.height / 2)
+        offset = Vector2(size.x * dx - size.y * dy, size.x * dy + size.y * dx)
+        position = position - offset
+        position = Vector2(int(position.x), int(position.y))
 
-    @visible.setter
-    def visible(self, value):
-        if self.useable():
-            self.sprite.visible = value
-        else:
-            try:
-                self.sprite.visible = value
-            except AttributeError:
-                pass
+        super().update(position.x, position.y,
+                        rotation=transform.rotation,
+                        scale_x=transform.scale.x * (Screen.unit / self.ppu),
+                        scale_y=transform.scale.y * (Screen.unit / self.ppu))
 
-    @property
-    def alpha(self):
-        return self._alpha
-
-    @alpha.setter
-    def alpha(self, alpha):
-        self._alpha = alpha
-        self.sprite.opacity = alpha
-
-    def spritePosition(self):
-        if self.gameObject is not None:
-            sprite, transform = self.sprite, self.gameObject.transform
-
-            position = transform.worldToScreen(transform.position)
-            dx, dy = math.cos(math.radians(360-transform.rotation)), \
-                     math.sin(math.radians(360-transform.rotation))
-            size = Vector2(sprite.width / 2, sprite.height / 2)
-            offset = Vector2(size.x * dx - size.y * dy, size.x * dy + size.y * dx)
-            position = position - offset
-            position = Vector2(int(position.x), int(position.y))
-
-            sprite.update(position.x, position.y,
-                          rotation=transform.rotation,
-                          scale_x=transform.scale.x * (Screen.unit / self.sprite.ppu),
-                          scale_y=transform.scale.y * (Screen.unit / self.sprite.ppu))
-
-    @property
-    def sprite(self):
-        return self._sprite
-
-    @sprite.setter
-    def sprite(self, sprite):
-        if not hasattr(sprite._vertex_list, "vertices"):
-            self.destroyed = True
-            return
-        if not hasattr(sprite._texture, "anchor_x"):
-            self.destroyed = True
-            return
-        if sprite is not None:
-            if self.sprite is None:
-                self.sprites.append(sprite)
-                sprite.visible = True
-                sprite.opacity = self.alpha
-                self._sprite = sprite
-            else:
-                if sprite != self.sprite:
-                    if sprite not in self.sprites:
-                        self.sprites.append(sprite)
-                    self.visible = False
-                    sprite.visible = True
-                    self._sprite = sprite
-                    sprite.opacity = self.alpha
-                    self.sprite.batch = self.batch
-                    self.sprite.group = self.group
-        else:
-            self.destroyed = True
-
-    def tileSprite(self, size):
-        tiled = pyglet.image.ImageGrid(image=self.sprite.image, rows=int(size.x), columns=int(size.y),
-                                       item_width=self.sprite.width, item_height=self.sprite.height)
+    def tile(self, size):
+        tiled = pyglet.image.ImageGrid(image=self.image, rows=int(size.x), columns=int(size.y),
+                                       item_width=self.width, item_height=self.height)
         texture_grid = tiled.get_texture_sequence().\
-            get_region(0, 0, self.sprite.width * size.x, self.sprite.height * size.y)
-        thing = Sprite(texture_grid)
-        self.sprite = thing
+            get_region(0, 0, self.width * size.x, self.height * size.y)
+        self.image = texture_grid
+
+    @property
+    def program(self):
+        return self._program
 
 
-class Sprite(pyglet.sprite.Sprite):
-    def __init__(self, image, batch="default", group="-10", ppu=Screen.unit, x=-5000, y=-5000):
-        b, g = Screen.get_render_set(batch, group)
-        if type(image) == str:
-            self.path = image
-            super().__init__(pyglet.image.load(os.path.join(Resources.resourcePath, self.path)),
-                             batch=b, group=g, x=x, y=y)
-        elif type(image) in [pyglet.image.Texture, pyglet.image.TextureGrid, pyglet.image.TextureRegion]:
-            self.path = image
-            super().__init__(image, batch=b, group=g, x=x, y=y)
-        self.ppu = ppu
-        self.b_name, self.g_name = batch, group
-        self.destroyed = False
+def load_image(name):
+    return pyglet.image.load(os.path.join(Resources.resourcePath, name))
 
-    def __deepcopy__(self, memo):
-        return Sprite(self.image, self.b_name, self.g_name, self.ppu)
 
-    def update(self, x=None, y=None, rotation=None, scale=None, scale_x=None, scale_y=None):
-        if not self.destroyed:
-            super().update(x, y, rotation, scale, scale_x, scale_y)
+def images_from_folder(sprite_folder):
+    sprites = []
+    for name in os.listdir(os.path.join(Resources.resourcePath, sprite_folder)):
+        sprites.append(pyglet.image.load(os.path.join(Resources.resourcePath, sprite_folder, name)))
+    return sprites
 
 
 def sprites_from_folder(sprite_folder):
     sprites = []
     for name in os.listdir(os.path.join(Resources.resourcePath, sprite_folder)):
-        sprites.append(Sprite(os.path.join(sprite_folder, name)))
+        sprites.append(Sprite(os.path.join(Resources.resourcePath, sprite_folder, name)))
     return sprites
 
 
-def animation_from_folder(sprite_folder, renderer: SpriteRenderer, fps):
-    sprites = sprites_from_folder(sprite_folder)
+def animation_from_folder(sprite_folder, renderer: Sprite, fps):
+    sprites = images_from_folder(sprite_folder)
     frames = [Frame(sprites[i], (i + 1) * 1 / fps) for i in range(len(sprites))]
-    prop = Property(renderer, "sprite", frames, interpolation=None)
+    prop = Property(renderer, "image", frames, interpolation=None)
     return Animation([prop])
 
 
@@ -258,10 +245,11 @@ class Property:
 
 
 class Animation:
-    def __init__(self, properties: list[Property], loop=True, play_on_awake=True):
+    def __init__(self, properties: list[Property], loop=True):
         self.properties = properties
         self.loop = loop
-        self.playing = play_on_awake
+
+        self.finished = False
 
     @property
     def properties(self):
@@ -274,7 +262,7 @@ class Animation:
         self.local_time = 0
 
     def update(self, fpsDelta):
-        if not self.playing:
+        if self.finished:
             return
 
         for prop in self.properties:
@@ -299,25 +287,40 @@ class Animation:
                     prop.value = frame.value
 
         if self.local_time + fpsDelta > self._length and not self.loop:
-            self.playing = False
+            self.finished = True
             return
 
         self.local_time = (self.local_time + fpsDelta) % self._length
 
     def play(self):
         self.local_time = 0
-        self.playing = True
+        self.finished = False
 
 
 class Animator(Component):
-    def __init__(self, animations: dict, state):
+    def __init__(self, animations: dict, state, play_on_awake=True):
         self._state = None
         self._anim = None
 
         self.animations = animations
         self.state = state
 
+        self._playing = play_on_awake
+
+    @property
+    def playing(self):
+        return self._playing
+
+    def play(self):
+        self._playing = True
+
+    def pause(self):
+        self._playing = False
+
     def update(self, fpsDelta):
+        if not self._playing:
+            return
+
         self._anim.update(fpsDelta)
 
     @property
@@ -328,3 +331,4 @@ class Animator(Component):
     def state(self, state):
         self._state = state
         self._anim = self.animations[state]
+        self._anim.play()

@@ -143,6 +143,7 @@ class Vector:
         self.data = (self / (self.magnitude() + 1e-6)).data
         return self
 
+    @property
     def magnitude(self):
         return sum(item ** 2 for item in self.data) ** 0.5
 

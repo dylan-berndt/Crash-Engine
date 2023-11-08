@@ -27,7 +27,24 @@ class GameObject:
         self.components = [self.transform]
         self.active = active
 
+        self._keep = False
+
         Resources.gameObjects.append(self)
+
+    def __str__(self):
+        return "GameObject: " + self.name + " " + str(self.transform.position)
+
+    @property
+    def keep(self):
+        return self._keep
+
+    @keep.setter
+    def keep(self, k):
+        self._keep = k
+        if k:
+            Resources.keep.append(self)
+        else:
+            Resources.keep.remove(self)
 
     def update(self, fpsDelta):
         if self.active:
@@ -67,9 +84,12 @@ class GameObject:
         for component in self.components:
             component.on_key_release(symbol, modifiers)
 
-    def addComponent(self, component):
-        self.components.append(component)
-        component.gameObject = self
+    def addComponent(self, *args):
+        for component in args:
+            if not isinstance(component, Component):
+                continue
+            self.components.append(component)
+            component.gameObject = self
         return self
 
     def removeComponent(self, component):
